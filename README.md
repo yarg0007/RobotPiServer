@@ -1,6 +1,8 @@
 # RobotPiServer
 ===============
-Server application that runs on the Raspberry Pi and receives control commands from client.
+Server application that runs on the Raspberry Pi and receives control commands from client.  
+
+Example robot: BruceBot1000 https://www.youtube.com/watch?v=05eA5SQ0DeI
 
 ##General Instructions / Initial Setup
 ---
