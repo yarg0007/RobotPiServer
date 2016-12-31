@@ -43,7 +43,7 @@ public class RobotPiServer {
 		streamServer.addAudioLevelListener(inputControls);
 		
 		Console console = System.console();
-		String input = console.readLine("Press enter to quit.");
+		console.readLine("Press enter to quit.");
 		
 		System.out.println("Shutting down robot pi receiver.");
 		

@@ -76,7 +76,7 @@ public class InputControlServer extends Thread implements AudioLevelListener{
 			byte[] datagramBuffer = new byte[64];
 			DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, datagramBuffer.length);
 			
-			int numTokens = 6;
+//			int numTokens = 6;
 			
 			int driveInput = 0;
 			int turnInput = 0;

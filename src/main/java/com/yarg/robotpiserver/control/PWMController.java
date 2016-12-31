@@ -62,22 +62,22 @@ public class PWMController extends Thread {
 	private static final int DRIVE_DIRECTION_CHANNEL_PWM_MIN = 0;
 		  
 	// Turn channel max, min and center
-	private static final int TURN_CHANNEL_PWM_CENTER = 325;
+//	private static final int TURN_CHANNEL_PWM_CENTER = 325;
 	private static final int TURN_CHANNEL_PWM_MAX = 400;
 	private static final int TURN_CHANNEL_PWM_MIN = 250;
 	
 	// Head lift channel max, min and center
-	private static final int HEAD_LIFT_CHANNEL_PWM_CENTER = 200;
+//	private static final int HEAD_LIFT_CHANNEL_PWM_CENTER = 200;
 	private static final int HEAD_LIFT_CHANNEL_PWM_MAX = 350;
 	private static final int HEAD_LIFT_CHANNEL_PWM_MIN = 200;
 	
 	// Head turn channel max, min and center
-	private static final int HEAD_TURN_CHANNEL_PWM_CENTER = 325;
+//	private static final int HEAD_TURN_CHANNEL_PWM_CENTER = 325;
 	private static final int HEAD_TURN_CHANNEL_PWM_MAX = 400;
 	private static final int HEAD_TURN_CHANNEL_PWM_MIN = 250;
 	
 	// Talk channel max, min and center
-	private static final int TALK_CHANNEL_PWM_CENTER = 295;
+//	private static final int TALK_CHANNEL_PWM_CENTER = 295;
 	private static final int TALK_CHANNEL_PWM_MAX = 250;
 	private static final int TALK_CHANNEL_PWM_MIN = 340;
 	
