@@ -111,6 +111,74 @@ Source: http://pi.gbaman.info/?p=150
 
 ##Audio Streaming Setup Raspberry Pi
 ---
+
+The instructions below are legacy instructions. [These instructions](https://www.raspberrypi-spy.co.uk/2019/06/using-a-usb-audio-device-with-the-raspberry-pi/) document the up-to-date audio configuration.
+
+1. Execute:
+```
+lsusb
+```
+Should se a listing for your Audio Adapter
+
+2. Set USB Audio as Default Audio Device
+The USB sound device can be made the default audio device by editing a system file “alsa.conf” :
+```
+sudo nano /usr/share/alsa/alsa.conf
+```
+Scroll and find the following two lines:
+
+```
+defaults.ctl.card 0
+defaults.pcm.card 0
+```
+Change the 0 to a 1 to match the card number of the USB device :
+
+```
+defaults.ctl.card 1
+defaults.pcm.card 1
+```
+To save the file and return to the command line use [CTRL-X], [Y], [ENTER].
+
+3. Legacy
+Previously in older versions of Raspbian you had to edit /etc/asound.conf and add the following text :
+```
+pcm.!default {
+ type hw
+ card 1
+}
+
+ctl.!default {
+ type hw 
+ card 1
+}
+```
+
+4. USB Sound Device Setup - Alsamixer
+To check the speaker and microphone are not muted you can run Alsamixer using :
+
+```
+alsamixer
+```
+This should show you a gauge for “Speaker”, “Mic” and “Auto Gain Control”. Be sure to use the F keys to show speaker and microphone.
+
+Using the arrow keys you can adjust the gain of both channels and turn auto-gain on or off. A channel can be muted using the M key. “MM” appears if the channel is muted. Press “ESC” to return to the command line.
+
+5. Speaker Test
+With headphones or a speaker plugged into the headphone socket on the dongle you can use the simple speaker-test utility :
+
+```
+speaker-test -c2
+```
+
+or
+
+```
+speaker-test -c2 -t sine -f 500
+```
+You should hear white-noise or a 500Hz tone.
+
+---
+
 Setup audio streaming  
 Assumes USB soundcard is plugged in.
 
