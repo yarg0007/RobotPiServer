@@ -78,6 +78,10 @@ sudo reboot
 
 ## Video Streaming
 ---
+
+Setup for combined audio and video streaming. Audio comes from USB audio device.
+
+<details><summary>Legacy Video Setup</summary><p>
 Test streaming video from raspberry pi over network.
 
 1. On your Mac:  
@@ -108,6 +112,8 @@ gst-launch-1.0 -v tcpclientsrc host=YOUR-PI-IP-ADDRESS port=5000  ! gdpdepay !  
 
 Source: http://blog.tkjelectronics.dk/2013/06/how-to-stream-video-and-audio-from-a-raspberry-pi-with-no-latency/  
 Source: http://pi.gbaman.info/?p=150
+
+</p></details>
 
 ## Audio Streaming Setup Raspberry Pi
 ---
