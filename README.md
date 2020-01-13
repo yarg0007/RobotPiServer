@@ -19,7 +19,7 @@ sudo apt-get install vim
 sudo apt-get install oracle-java7-jdk
 ```
 
-##WiFi Setup Raspberry Pi
+## WiFi Setup Raspberry Pi
 ---
 
 1. Connect to your WiFi network.  
@@ -177,7 +177,6 @@ speaker-test -c2 -t sine -f 500
 ```
 You should hear white-noise or a 500Hz tone.
 
----
 <details><summary>Legacy Audio Setup</summary><p>
 Setup audio streaming  
 Assumes USB soundcard is plugged in.
