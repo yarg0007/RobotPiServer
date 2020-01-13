@@ -19,6 +19,43 @@ sudo apt-get install vim
 sudo apt-get install oracle-java7-jdk
 ```
 
+Since Oracle JDK 7 has gone out of support it is harder to get ahold of. For armv6, the apt-get JDK will not work. So, grab the JDK archive in this repo and install as noted below (borrowed from [this link](https://elinux.org/RPi_Java_JDK_Installation)):
+
+```
+sudo mkdir -p /opt/java
+sudo chown root:root /opt/java
+cd /opt/java
+sudo tar xvzf ~/jdk-7u10-linux-arm-sfp.tar.gz
+```
+
+This should create directory /opt/java/jdk1.7.0_10 (or similar, depending on the version you downloaded). If the tar command completes correctly, the downloaded file in your home directory can be deleted:
+
+```
+rm ~/jdk-7u10-linux-arm-sfp.tar.gz
+```
+
+The system needs to know that a JVM has been installed, where it can be found on the system, and which is the default version (if there is more than one choice available). Type the following in the command window:
+
+```
+sudo update-alternatives --install "/usr/bin/java" "java" "/opt/java/jdk1.7.0_10/bin/java" 1
+sudo update-alternatives --set java /opt/java/jdk1.7.0_10/bin/java
+```
+
+Java should now be successfully installed. To test this, request the java version with:
+
+```
+java -version
+```
+
+You should get a response showing the version that you just installed.
+
+```
+java version "1.7.0_10"
+Java(TM) SE Runtime Environment (build 1.7.0_10-b18)
+Java HotSpot(TM) Client VM (build 23.6-b04, mixed mode)
+```
+
+
 ## WiFi Setup Raspberry Pi
 ---
 
