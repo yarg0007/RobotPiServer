@@ -4,7 +4,7 @@ Server application that runs on the Raspberry Pi and receives control commands f
 
 Example robot: BruceBot1000 https://www.youtube.com/watch?v=05eA5SQ0DeI
 
-##General Instructions / Initial Setup
+## General Instructions / Initial Setup
 ---
 This has been tested with Raspbian running on the Raspberry PI. There shouldn't be any problem executing on another distro as long as the JVM is supported. Be sure to install with support for WiFi and the Raspberry PI camera when choosing installation settings.
 
@@ -76,7 +76,7 @@ sudo reboot
 ```
 [Raspberry Pi .local Domain Name](http://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/)
 
-##Video Streaming
+## Video Streaming
 ---
 Test streaming video from raspberry pi over network.
 
@@ -109,7 +109,7 @@ gst-launch-1.0 -v tcpclientsrc host=YOUR-PI-IP-ADDRESS port=5000  ! gdpdepay !  
 Source: http://blog.tkjelectronics.dk/2013/06/how-to-stream-video-and-audio-from-a-raspberry-pi-with-no-latency/  
 Source: http://pi.gbaman.info/?p=150
 
-##Audio Streaming Setup Raspberry Pi
+## Audio Streaming Setup Raspberry Pi
 ---
 
 The instructions below are legacy instructions. [These instructions](https://www.raspberrypi-spy.co.uk/2019/06/using-a-usb-audio-device-with-the-raspberry-pi/) document the up-to-date audio configuration.
@@ -178,7 +178,7 @@ speaker-test -c2 -t sine -f 500
 You should hear white-noise or a 500Hz tone.
 
 ---
-
+<details><summary>Legacy Audio Setup</summary><p>
 Setup audio streaming  
 Assumes USB soundcard is plugged in.
 
@@ -250,8 +250,9 @@ arecord -D plughw:0 -r 48000 test.wav
 # play recording
 aplay -D plughw:0 test.wav
 ```
+</p></details>
 
-PWM-Servo Controller
+## PWM-Servo Controller
 ---
 [Raspberry Pi PWM support](http://www.lediouris.net/RaspberryPI/servo/readme.html)  
 1. Setup PWM modules
