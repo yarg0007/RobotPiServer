@@ -59,6 +59,10 @@ Java HotSpot(TM) Client VM (build 23.6-b04, mixed mode)
 ## WiFi Setup Raspberry Pi
 ---
 
+These instructions are needed for setting up wifi, but the host name piece may not be necessary if you use the raspi-config settings to set the host name. This is true for Raspbian Buster.
+
+<details><summary>Legacy Video Setup</summary><p>
+
 1. Connect to your WiFi network.  
 Assumes use of Wi-Pi adapter (taken from Wi_Pi.User_Manual.pdf)  
 ```  
@@ -112,6 +116,8 @@ sudo /etc/init.d/hostname.sh
 sudo reboot
 ```
 [Raspberry Pi .local Domain Name](http://www.howtogeek.com/167190/how-and-why-to-assign-the-.local-domain-to-your-raspberry-pi/)
+
+</p></details>
 
 ## Video Streaming
 ---
