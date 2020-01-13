@@ -61,7 +61,7 @@ Java HotSpot(TM) Client VM (build 23.6-b04, mixed mode)
 
 These instructions are needed for setting up wifi, but the host name piece may not be necessary if you use the raspi-config settings to set the host name. This is true for Raspbian Buster.
 
-<details><summary>Legacy Video Setup</summary><p>
+<details><summary>WIFI Setup</summary><p>
 
 1. Connect to your WiFi network.  
 Assumes use of Wi-Pi adapter (taken from Wi_Pi.User_Manual.pdf)  
