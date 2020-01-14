@@ -169,7 +169,37 @@ lsusb
 ```
 Should se a listing for your Audio Adapter
 
-2. Set USB Audio as Default Audio Device
+2. Execute:
+```
+aplay -l
+```
+This should show the available sound devices. Example:
+
+```
+**** List of PLAYBACK Hardware Devices ****
+card 0: ALSA [bcm2835 ALSA], device 0: bcm2835 ALSA [bcm2835 ALSA]
+  Subdevices: 7/7
+  Subdevice #0: subdevice #0
+  Subdevice #1: subdevice #1
+  Subdevice #2: subdevice #2
+  Subdevice #3: subdevice #3
+  Subdevice #4: subdevice #4
+  Subdevice #5: subdevice #5
+  Subdevice #6: subdevice #6
+card 0: ALSA [bcm2835 ALSA], device 1: bcm2835 IEC958/HDMI [bcm2835 IEC958/HDMI]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: ALSA [bcm2835 ALSA], device 2: bcm2835 IEC958/HDMI1 [bcm2835 IEC958/HDMI1]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: Set [C-Media USB Headphone Set], device 0: USB Audio [USB Audio]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+```
+
+This shows the USB sound device as card 1: device0 (hw:1,0).
+
+3. Set USB Audio as Default Audio Device
 The USB sound device can be made the default audio device by editing a system file “alsa.conf” :
 ```
 sudo nano /usr/share/alsa/alsa.conf
