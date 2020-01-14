@@ -217,6 +217,10 @@ Restart: sudo service nginx restart
 
 ```
 ./picam --alsadev hw:1,0 --tcpout tcp://127.0.0.1:8181
+
+or
+
+./picam --alsadev hw:1,0 --width 640 --height 480 --vfr --tcpout tcp://127.0.0.1:8181 --videobitrate 0
 ```
 
 10. Observer in VLC
