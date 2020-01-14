@@ -124,6 +124,58 @@ sudo reboot
 
 Setup for combined audio and video streaming. Audio comes from USB audio device.
 
+Sourced from: [picam](https://github.com/iizukanao/picam)
+
+Execute these commands from user's home directory.
+
+1. Enable camera
+
+```
+sudo raspi-config
+```
+
+2. Install dependencies
+
+```
+sudo apt-get update
+sudo apt-get install libharfbuzz0b libfontconfig1
+```
+
+3. Create directories and symbolic links (copy and paste the entire block into the terminal)
+
+```
+cat > make_dirs.sh <<'EOF'
+#!/bin/bash
+DEST_DIR=~/picam
+SHM_DIR=/run/shm
+
+mkdir -p $SHM_DIR/rec
+mkdir -p $SHM_DIR/hooks
+mkdir -p $SHM_DIR/state
+mkdir -p $DEST_DIR/archive
+
+ln -sfn $DEST_DIR/archive $SHM_DIR/rec/archive
+ln -sfn $SHM_DIR/rec $DEST_DIR/rec
+ln -sfn $SHM_DIR/hooks $DEST_DIR/hooks
+ln -sfn $SHM_DIR/state $DEST_DIR/state
+EOF
+```
+
+4. Change file permissions
+
+```
+chmod +x make_dirs.sh
+./make_dirs.sh
+```
+
+5. Install picam binary
+
+```
+wget https://github.com/iizukanao/picam/releases/download/v1.4.7/picam-1.4.7-binary.tar.xz
+tar xvf picam-1.4.7-binary.tar.xz
+cp picam-1.4.7-binary/picam ~/picam/
+```
+
 <details><summary>Legacy Video Setup</summary><p>
 Test streaming video from raspberry pi over network.
 
