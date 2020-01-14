@@ -176,6 +176,61 @@ tar xvf picam-1.4.7-binary.tar.xz
 cp picam-1.4.7-binary/picam ~/picam/
 ```
 
+6. Install nginx and nginx rtmp module
+
+```
+sudo apt-get install nginx
+sudo apt-get install libnginx-mod-rtmp
+```
+
+7. Update nginx config
+
+```
+sudo vi /etc/nginx/nginx.conf 
+```
+
+And add the following to the config file (be sure to replace /path/to/ffmpeg with the actual path to ffmpeg!:
+
+```
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4000;
+        application webcam {
+            live on;
+
+            exec_static /path/to/ffmpeg -i tcp://127.0.0.1:8181?listen -c:v copy -ar 44100 -ab 40000 -f flv rtmp://localhost:1935/webcam/mystream;
+        }
+    }
+}
+```
+
+8. Restart nginx server or start it, depending on status.
+
+```
+Start: sudo service nginx start
+Stop: sudo service nginx stop
+Restart: sudo service nginx restart
+```
+
+9. Run picam
+
+```
+./picam --alsadev hw:1,0 --tcpout tcp://127.0.0.1:8181
+```
+
+10. Observer in VLC
+
+```
+rtmp://YOUR_RASPBERRYPI_HOST_OR_IP/webcam/mystream
+```
+
+Browser confirm nginx server is running:
+
+```
+http://your_raspberrypi_host_or_ip
+```
+
 <details><summary>Legacy Video Setup</summary><p>
 Test streaming video from raspberry pi over network.
 
