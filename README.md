@@ -185,6 +185,37 @@ sudo apt-get install libnginx-mod-rtmp
 
 7. Update nginx config
 
+<details><summary>Instructions for building ffmpeg instead of using installed version...</summary><p>
+
+Compile x264
+
+```
+mkdir ~/src; cd ~/src
+git clone git://git.videolan.org/x264
+cd x264
+./configure --host=arm-unknown-linux-gnueabi --enable-static --disable-opencl
+sudo make install
+```
+
+Compile mpeg
+
+```
+cd ~/src
+git clone git://source.ffmpeg.org/ffmpeg.git depth=1
+cd ffmpeg/
+sudo ./configure --arch=armel --target-os=linux --enable-gpl --enable-libx264 --enable-nonfree
+```
+
+This will take 4hrs
+
+```
+sudo make install
+```
+
+</p></details>
+
+Update nginx config
+
 ```
 sudo vi /etc/nginx/nginx.conf 
 ```
@@ -199,7 +230,7 @@ rtmp {
         application webcam {
             live on;
 
-            exec_static /path/to/ffmpeg -i tcp://127.0.0.1:8181?listen -c:v copy -ar 44100 -ab 40000 -f flv rtmp://localhost:1935/webcam/mystream;
+            exec_static </path/to/ffmpeg> -i tcp://127.0.0.1:8181?listen -c:v copy -ar 44100 -ab 40000 -f flv rtmp://localhost:1935/webcam/mystream;
         }
     }
 }
@@ -216,7 +247,7 @@ Restart: sudo service nginx restart
 9. Run picam
 
 ```
-./picam --alsadev hw:1,0 --tcpout tcp://127.0.0.1:8181
+./picam -w 320 -h 240 -v 150000 --alsadev hw:1,0 --tcpout tcp://127.0.0.1:8181
 
 or
 
