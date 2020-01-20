@@ -502,3 +502,76 @@ sudo i2cdetect -y 1
 # look for 40 & 70 as being attached
 ```
 
+## Startup script
+
+[Source](https://www.stuffaboutcode.com/2012/06/raspberry-pi-run-program-at-start-up.html) . 
+
+1. Create script in /etc/init.d  
+```
+sudo vi /etc/init.d/robotPi
+```
+
+2. Copy the following into the script . 
+```
+#! /bin/sh
+# /etc/init.d/robotPi
+
+### BEGIN INIT INFO
+# Provides:          robotPi
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Simple script to start a program at boot
+# Description:       A simple script from www.stuffaboutcode.com which will start / stop a program a boot / shutdown.
+### END INIT INFO
+
+# If you want a command to always run, put it here
+
+# Carry out specific functions when asked to by the system
+case "$1" in
+  start)
+    echo "Starting robotPi"
+    # run application you want to start
+    sudo service nginx start
+    sudo /home/pi/picam/picam -w 320 -h 240 -v 150000 --tcpout tcp://127.0.0.1:8181 --alsadev hw:1,0 &
+    ;;
+  stop)
+    echo "Stopping robotPi"
+    # kill application you want to stop
+    killall picam
+    sudo service nginx stop
+    ;;
+  *)
+    echo "Usage: /etc/init.d/robotPi {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
+```
+
+3. Make script executable.  
+```
+sudo chmod 755 /etc/init.d/robotPi
+```
+
+4. Test starting script.  
+```
+sudo /etc/init.d/robotPi start
+```
+
+5. Test stopping script.  
+```
+sudo /etc/init.d/robotPi stop
+```
+
+6. Register script to be run at startup and shutdown
+```
+sudo update-rc.d robotPi defaults
+```
+
+7. If you ever want to remove the script from startup and shutdown
+```
+sudo update-rc.d -f  robotPi remove
+```
