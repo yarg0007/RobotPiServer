@@ -175,6 +175,27 @@ wget https://github.com/iizukanao/picam/releases/download/v1.4.7/picam-1.4.7-bin
 tar xvf picam-1.4.7-binary.tar.xz
 cp picam-1.4.7-binary/picam ~/picam/
 ```
+6. Install and setup node-rtsp-rtmp-server
+
+Follow the [instructions](https://github.com/iizukanao/node-rtsp-rtmp-server/blob/master/README.md) for install without docker, config and start server.
+
+You may also follow the steps in this [guide](https://hmbd.wordpress.com/2016/08/01/raspberry-pi-video-and-audio-recording-and-streaming-guide/) - specific steps are below.
+
+```
+sudo apt-get install npm
+sudo npm install coffee-script -g
+git clone https://github.com/iizukanao/node-rtsp-rtmp-server.git
+cd node-rtsp-rtmp-server
+npm install -d
+cd ~/node-rtsp-rtmp-server
+./start_server.sh &
+# and once the server is started (you'll see some output in the console)
+cd ~/picam
+./picam --alsadev hw:1,0 --rtspout -w 800 -h 480 -v 500000 -f 20 &
+```
+To access the stream in VLC, open a network stream at rtsp://<pi_ip_adress>:80/live/picam.
+
+DO NOT PROCEED WITH THE REMAININIG STEPS - KEEPING AS DOCUMENTATION FOR NGINX SERVER - CLEANUP LATER
 
 6. Install nginx and nginx rtmp module
 
