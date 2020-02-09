@@ -124,7 +124,8 @@ sudo reboot
 
 BEST INSTUCTIONS [github repo](https://github.com/yarg0007/mjpg-streamer) for raspicam streaming  
 
-[ref A](https://blog.miguelgrinberg.com/post/how-to-build-and-run-mjpg-streamer-on-the-raspberry-pi)
+[ref A](https://blog.miguelgrinberg.com/post/how-to-build-and-run-mjpg-streamer-on-the-raspberry-pi) 
+
 [ref B](https://www.sigmdel.ca/michel/ha/rpi/streaming_en.html)
 
 Setup operations:
