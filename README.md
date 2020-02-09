@@ -122,6 +122,35 @@ sudo reboot
 ## Video Streaming
 ---
 
+BEST INSTUCTIONS [github repo](https://github.com/yarg0007/mjpg-streamer) for raspicam streaming  
+
+[ref A](https://blog.miguelgrinberg.com/post/how-to-build-and-run-mjpg-streamer-on-the-raspberry-pi)
+[ref B](https://www.sigmdel.ca/michel/ha/rpi/streaming_en.html)
+
+Setup operations:
+```
+sudo apt-get install cmake libjpeg8-dev
+
+wget https://github.com/jacksonliam/mjpg-streamer/archive/master.zip
+unzip master.zip
+cd mjp*g-*
+cd mjpg-*
+make
+sudo make install
+```
+
+alternate path: ~/mpjg-streamer-master/mjpg-streamer-experimental
+
+```
+cd ~/mpjg-streamer-master/mjpg-streamer-experimental
+export LD_LIBRARY_PATH=.
+./mjpg_streamer -o "output_http.so -w ./www" -i "input_raspicam.so"
+```
+
+View stream from [http://raspi.local:8080/?action=stream](http://raspi.local:8080/?action=stream)
+
+
+<details><summary>NGINX Setup - Android not supported</summary><p>
 Setup for combined audio and video streaming. Audio comes from USB audio device.
 
 Sourced from: [picam](https://github.com/iizukanao/picam)
@@ -286,6 +315,7 @@ Browser confirm nginx server is running:
 ```
 http://your_raspberrypi_host_or_ip
 ```
+</p></details>
 
 <details><summary>Legacy Video Setup</summary><p>
 Test streaming video from raspberry pi over network.
