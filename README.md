@@ -355,7 +355,7 @@ Source: http://pi.gbaman.info/?p=150
 ## Audio Streaming Setup Raspberry Pi
 ---
 
-The instructions below are legacy instructions. [These instructions](https://www.raspberrypi-spy.co.uk/2019/06/using-a-usb-audio-device-with-the-raspberry-pi/) document the up-to-date audio configuration.
+The instructions below are legacy instructions. [These instructions](https://www.raspberrypi-spy.co.uk/2019/06/using-a-usb-audio-device-with-the-raspberry-pi/) document an alternative config. [Best instructions](https://raspberrypi.stackexchange.com/questions/80072/how-can-i-use-an-external-usb-sound-card-and-set-it-as-default) document the best, up-to-date audio configuration.
 
 1. Execute:
 ```
@@ -393,8 +393,41 @@ card 1: Set [C-Media USB Headphone Set], device 0: USB Audio [USB Audio]
 
 This shows the USB sound device as card 1: device0 (hw:1,0).
 
-3. Set USB Audio as Default Audio Device
-The USB sound device can be made the default audio device by editing a system file “alsa.conf” :
+3. Disable audio jack
+```
+# Edit boot config with:
+sudo nano /boot/config.txt
+# so that:
+cat /boot/config.txt
+...
+# Enable audio (loads snd_bcm2835)
+#dtparam=audio=on
+dtparam=audio=off
+...
+# You need to reboot!
+sudo reboot now
+```
+
+4. Set USB Audio as Default Audio Device
+There are a couple files that need to be edited.
+
+First: set .asoundrc to card 1 in both places.
+```
+#sudo vi ~/.asoundrc
+...
+
+pcm.!default {
+        type hw
+        card 1
+}
+
+ctl.!default {
+        type hw
+        card 1
+}
+```
+
+Second: The USB sound device can be made the default audio device by editing a system file “alsa.conf” :
 ```
 sudo nano /usr/share/alsa/alsa.conf
 ```
@@ -412,7 +445,7 @@ defaults.pcm.card 1
 ```
 To save the file and return to the command line use [CTRL-X], [Y], [ENTER].
 
-3. Legacy
+4. Legacy
 Previously in older versions of Raspbian you had to edit /etc/asound.conf and add the following text :
 ```
 pcm.!default {
@@ -426,7 +459,7 @@ ctl.!default {
 }
 ```
 
-4. USB Sound Device Setup - Alsamixer
+5. USB Sound Device Setup - Alsamixer
 To check the speaker and microphone are not muted you can run Alsamixer using :
 
 ```
@@ -436,7 +469,7 @@ This should show you a gauge for “Speaker”, “Mic” and “Auto Gain Contr
 
 Using the arrow keys you can adjust the gain of both channels and turn auto-gain on or off. A channel can be muted using the M key. “MM” appears if the channel is muted. Press “ESC” to return to the command line.
 
-5. Speaker Test
+6. Speaker Test
 With headphones or a speaker plugged into the headphone socket on the dongle you can use the simple speaker-test utility :
 
 ```
