@@ -25,7 +25,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
-public final class PWMController extends Thread {
+public class PWMController extends Thread {
 
 	public final static int HERTZ = 50;
 
