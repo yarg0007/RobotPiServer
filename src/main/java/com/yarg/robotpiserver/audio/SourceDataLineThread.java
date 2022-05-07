@@ -33,24 +33,25 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.Mixer.Info;
 import javax.sound.sampled.SourceDataLine;
 
-public class SourceDataLineThread extends Thread {
+public class SourceDataLineThread implements Runnable {
 
 	private String AUDIO_MIXER_NAME = "Set [plughw:1,0]";
-	
+
 	private int serverPort;
-	
+
 	/** The connected client. Setup to only allow a single client connection.*/
 	private DatagramSocket serverDatagramSocket = null;
-	
+
 	/** Flag execution state of thread. */
 	private boolean running;
+	private Thread executionThread;
 
 	/** Plays audio to the speakers. */
 	private SourceDataLine sourceDataLine;
-	
+
 	/** Interface for setting the client address to send audio back to. */
 	private DatagramClientReturnAddress clientAddress;
-	
+
 	private ArrayList<AudioLevelListener> audioLevelListeners;
 
 	/**
@@ -62,17 +63,19 @@ public class SourceDataLineThread extends Thread {
 		audioLevelListeners = new ArrayList<AudioLevelListener>();
 		initialize();
 	}
-	
+
 	/**
 	 * Initialize the instance. Setup Datagram server and then do all remaining
 	 * the setup magic. Must be called after getting class instance.
 	 */
 	public void initialize() {
-		
+
 		if (running) {
 			running = false;
-			this.interrupt();
-			
+			if (executionThread != null) {
+				executionThread.interrupt();
+			}
+
 			// Let the thread terminate and then proceed.
 			try {
 				Thread.sleep(2000);
@@ -80,36 +83,36 @@ public class SourceDataLineThread extends Thread {
 				ie.printStackTrace();
 			}
 		}
-		
+
 		if (serverDatagramSocket != null) {
 			serverDatagramSocket.close();
 		}
-		
+
 		try {
 			serverDatagramSocket = new DatagramSocket(serverPort);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
-		
+
 		if (sourceDataLine == null) {
-			
+
 			Info[] mixerInfo = AudioSystem.getMixerInfo();
-			
-			DataLine.Info dataLineInfo = 
+
+			DataLine.Info dataLineInfo =
 					new DataLine.Info(SourceDataLine.class, getAudioFormat());
-			
+
 			for (int i = 0; i < mixerInfo.length; i++) {
 				System.out.println("SOURCE DATA LINE MIXER: "+i);
 				System.out.println("\tNAME: "+mixerInfo[i].getName());
 				System.out.println("\tDESCRIPTION: "+mixerInfo[i].getDescription());
 				System.out.println("\tVENDOR: "+mixerInfo[i].getVendor());
 				System.out.println("\tVERSION: "+mixerInfo[i].getVersion());
-				
+
 				if (AUDIO_MIXER_NAME.equals(mixerInfo[i].getName())) {
 					Mixer mixer = AudioSystem.getMixer(mixerInfo[i]);
-					
+
 					try {
-						sourceDataLine = 
+						sourceDataLine =
 								(SourceDataLine) mixer.getLine(dataLineInfo);
 						sourceDataLine.open(getAudioFormat());
 						break;
@@ -121,156 +124,161 @@ public class SourceDataLineThread extends Thread {
 					}
 				}
 			}
-			
+
 			// If still null, we didn't get a line. Bail.
 			if (sourceDataLine == null) {
 				return;
 			}
-			
+
 			sourceDataLine.start();
-			
+
 			System.out.println(sourceDataLine.getLineInfo().toString());
 		}
 	}
-	
+
 	public void addAudioLevelListener(AudioLevelListener listener) {
 		audioLevelListeners.add(listener);
 	}
-	
+
 	public void removeAudioLevelListener(AudioLevelListener listener) {
 		audioLevelListeners.remove(listener);
 	}
-	
+
 	/**
 	 * Start the speaker thread after opening connections.
 	 */
 	public void startAudioStreamSpeakers() {
-		
+
 		running = true;
-		this.start();
+		executionThread = new Thread(this);
+		executionThread.start();
 	}
-	
+
 	/**
 	 * Stop the speaker thread, close connections etc.
 	 */
 	public void stopAudioStreamSpeakers() {
-		
+
 		running = false;
-		this.interrupt();
-		
+		if (executionThread != null) {
+			executionThread.interrupt();
+		}
+
 		sourceDataLine.flush();
 		sourceDataLine.close();
 		sourceDataLine = null;
-		
+
 		serverDatagramSocket.close();
 		serverDatagramSocket = null;
-		
+
 		System.out.println("StopAudioStreamSpeakers complete.");
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Thread#run()
 	 */
-	public void run() {			
-			
-			int dataLen = getAudioBufferSizeBytes();
-			byte[] datagramBuffer = new byte[dataLen];
-			DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, dataLen);
-			byte[] rawData;
-			
-			
-				System.out.println("Waiting for initial packet");
-				
-				try {
-					serverDatagramSocket.receive(datagramPacket);
-				} catch (IOException e) {
-					System.out.println("Exception occurred with initial incoming audio stream. See stack trace for more infomation.");
-					e.printStackTrace();
-					stopAudioStreamSpeakers();
-					return;
-				}
-				
-				clientAddress.setAddress(datagramPacket.getAddress().getHostAddress());
-				System.out.println("\nGot packet from: "+datagramPacket.getAddress().getHostAddress());
-				
-				while (running) {
-					
-					try {
-						serverDatagramSocket.receive(datagramPacket);
-					} catch (IOException e) {
-						
-						System.out.println("Exception on incoming audio stream. Pausing before continuing.");
-						e.printStackTrace();
-						
-						// Let the system rest and then loop back to try the
-						// next incoming data bit.
-						try {
-							sleep(500);
-						} catch (InterruptedException e1) {
-							e1.printStackTrace();
-						}
-						continue;
-					}
-					
-					rawData = datagramPacket.getData();
-					int maxSample = 0;
-					for (int t = 0; t < rawData.length; t+=2) {
-							int low = (int) rawData[t];
-							t++;
-							int high = (int) rawData[t+1];
-							t++;
-							int sample = (high << 8) + (low & 0x00ff);
-							if (sample > maxSample)
-									maxSample = sample;
-					}
+	@Override
+	public void run() {
 
-					for (AudioLevelListener listener : audioLevelListeners) {
-						listener.audioLevelUpdate(300, maxSample);
-					}
-						
-					sourceDataLine.write(
-							datagramPacket.getData(), 
-							0, 
-							datagramPacket.getLength());
-					
+		int dataLen = getAudioBufferSizeBytes();
+		byte[] datagramBuffer = new byte[dataLen];
+		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, dataLen);
+		byte[] rawData;
+
+
+		System.out.println("Waiting for initial packet");
+
+		try {
+			serverDatagramSocket.receive(datagramPacket);
+		} catch (IOException e) {
+			System.out.println("Exception occurred with initial incoming audio stream. See stack trace for more infomation.");
+			e.printStackTrace();
+			stopAudioStreamSpeakers();
+			return;
+		}
+
+		clientAddress.setAddress(datagramPacket.getAddress().getHostAddress());
+		System.out.println("\nGot packet from: "+datagramPacket.getAddress().getHostAddress());
+
+		while (running) {
+
+			try {
+				serverDatagramSocket.receive(datagramPacket);
+			} catch (IOException e) {
+
+				System.out.println("Exception on incoming audio stream. Pausing before continuing.");
+				e.printStackTrace();
+
+				// Let the system rest and then loop back to try the
+				// next incoming data bit.
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
 				}
+				continue;
+			}
+
+			rawData = datagramPacket.getData();
+			int maxSample = 0;
+			for (int t = 0; t < rawData.length; t+=2) {
+				int low = rawData[t];
+				t++;
+				int high = rawData[t+1];
+				t++;
+				int sample = (high << 8) + (low & 0x00ff);
+				if (sample > maxSample) {
+					maxSample = sample;
+				}
+			}
+
+			for (AudioLevelListener listener : audioLevelListeners) {
+				listener.audioLevelUpdate(300, maxSample);
+			}
+
+			sourceDataLine.write(
+					datagramPacket.getData(),
+					0,
+					datagramPacket.getLength());
+
+		}
 
 	}
-	
+
 	// -------------------------------------------------------------------------
 	// Private methods
 	// -------------------------------------------------------------------------
-	
+
 	/**
 	 * Get the audio format.
 	 * @return Audio format to use for recording.
 	 */
 	private AudioFormat getAudioFormat() {
-		
-			float sampleRate = 44100.0f; 
-			int sampleSizeInBits = 16; 
-			int channels = 1; 
-			boolean signed = true; 
-			boolean bigEndian = true; 
-			
-			return new AudioFormat(
+
+		float sampleRate = 44100.0f;
+		int sampleSizeInBits = 16;
+		int channels = 1;
+		boolean signed = true;
+		boolean bigEndian = true;
+
+		return new AudioFormat(
 				sampleRate,
 				sampleSizeInBits,
 				channels,
 				signed,
 				bigEndian);
 	}
-	
+
 	/**
 	 * Size of the playback buffer in bytes.
 	 * @return Size of buffer
 	 */
 	private int getAudioBufferSizeBytes() {
 
-        int frameSizeInBytes = getAudioFormat().getFrameSize();
-        int bufferLengthInFrames = sourceDataLine.getBufferSize() / 8;
-        int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
-        return bufferLengthInBytes;
+		int frameSizeInBytes = getAudioFormat().getFrameSize();
+		int bufferLengthInFrames = sourceDataLine.getBufferSize() / 8;
+		int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
+		return bufferLengthInBytes;
 	}
-	
+
 }
