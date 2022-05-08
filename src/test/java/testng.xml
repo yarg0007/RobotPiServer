@@ -5,6 +5,7 @@
     <packages>
       <package name="com.yarg.robotpiserver.audio" />
       <package name="com.yarg.robotpiserver.control" />
+      <package name="com.yarg.robotpiserver.video" />
    </packages>
  </test>
 </suite>
