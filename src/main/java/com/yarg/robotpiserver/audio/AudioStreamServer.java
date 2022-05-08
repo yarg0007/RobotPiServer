@@ -2,7 +2,7 @@ package com.yarg.robotpiserver.audio;
 
 import com.yarg.robotpiserver.video.VideoStream;
 
-public class AudioStreamServer extends Thread implements DatagramClientReturnAddress {
+public class AudioStreamServer implements DatagramClientReturnAddress {
 
 	private int RECEIVE_PORT = 49809;
 
@@ -12,7 +12,6 @@ public class AudioStreamServer extends Thread implements DatagramClientReturnAdd
 
 	private SourceDataLineThread incomingStream;
 	private TargetDataLineThread microphoneStream;
-
 	private VideoStream videoStream;
 
 	public AudioStreamServer() {
@@ -24,9 +23,11 @@ public class AudioStreamServer extends Thread implements DatagramClientReturnAdd
 		microphoneStream.initialize();
 	}
 
-	public AudioStreamServer(SourceDataLineThread incomingStream, TargetDataLineThread microphoneStream) {
+	public AudioStreamServer(SourceDataLineThread incomingStream, TargetDataLineThread microphoneStream,
+			VideoStream videoStream) {
 		this.incomingStream = incomingStream;
 		this.microphoneStream = microphoneStream;
+		this.videoStream = videoStream;
 	}
 
 	public void startAudioStream() {
@@ -60,7 +61,9 @@ public class AudioStreamServer extends Thread implements DatagramClientReturnAdd
 		// sending the video stream on. Hence, the video is started here.
 		// Stopping of the video stream is also handled at the same time as the
 		// audio stream is closed.
-		videoStream = new VideoStream(address);
+		if (videoStream == null) {
+			videoStream = new VideoStream(address);
+		}
 		videoStream.startVideoStream();
 	}
 
