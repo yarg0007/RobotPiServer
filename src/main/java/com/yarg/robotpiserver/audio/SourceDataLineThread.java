@@ -39,7 +39,7 @@ public class SourceDataLineThread implements Runnable {
 
 	private int serverPort;
 
-	/** The connected client. Setup to only allow a single client connection.*/
+	/** The connected client. Setup to only allow a single client connection. */
 	private DatagramSocket serverDatagramSocket = null;
 
 	/** Flag execution state of thread. */
@@ -52,7 +52,10 @@ public class SourceDataLineThread implements Runnable {
 	/** Interface for setting the client address to send audio back to. */
 	private DatagramClientReturnAddress clientAddress;
 
+	/** Audio level listeners that would like to response to audio level changes. */
 	private ArrayList<AudioLevelListener> audioLevelListeners;
+
+	private MixerWrapper mixerWrapper;
 
 	/**
 	 * Default constructor.
@@ -61,7 +64,33 @@ public class SourceDataLineThread implements Runnable {
 		this.serverPort = serverPort;
 		this.clientAddress = clientAddress;
 		audioLevelListeners = new ArrayList<AudioLevelListener>();
+		mixerWrapper = new MixerWrapper();
 		initialize();
+	}
+
+	/**
+	 * Specify the dependencies to use.
+	 *
+	 * @param serverPort
+	 *            Server port to connect to for datagram socket.
+	 * @param serverDatagramSocket
+	 *            Connected client - setup to only allow a single client
+	 *            connection.
+	 * @param sourceDataLine
+	 *            Plays audio to the speakers.
+	 * @param clientAddress
+	 *            Interface for setting the client address to send audio back
+	 *            to.
+	 * @param mixerWrapper
+	 * 			  Mixer wrapper instance.
+	 */
+	public SourceDataLineThread(int serverPort, DatagramSocket serverDatagramSocket, SourceDataLine sourceDataLine,
+			DatagramClientReturnAddress clientAddress, MixerWrapper mixerWrapper) {
+		this.serverPort = serverPort;
+		this.serverDatagramSocket = serverDatagramSocket;
+		this.sourceDataLine = sourceDataLine;
+		this.clientAddress = clientAddress;
+		this.mixerWrapper = mixerWrapper;
 	}
 
 	/**
@@ -96,24 +125,22 @@ public class SourceDataLineThread implements Runnable {
 
 		if (sourceDataLine == null) {
 
-			Info[] mixerInfo = AudioSystem.getMixerInfo();
+			Info[] mixerInfo = mixerWrapper.getMixerInfo();
 
-			DataLine.Info dataLineInfo =
-					new DataLine.Info(SourceDataLine.class, getAudioFormat());
+			DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, getAudioFormat());
 
 			for (int i = 0; i < mixerInfo.length; i++) {
-				System.out.println("SOURCE DATA LINE MIXER: "+i);
-				System.out.println("\tNAME: "+mixerInfo[i].getName());
-				System.out.println("\tDESCRIPTION: "+mixerInfo[i].getDescription());
-				System.out.println("\tVENDOR: "+mixerInfo[i].getVendor());
-				System.out.println("\tVERSION: "+mixerInfo[i].getVersion());
+				System.out.println("SOURCE DATA LINE MIXER: " + i);
+				System.out.println("\tNAME: " + mixerInfo[i].getName());
+				System.out.println("\tDESCRIPTION: " + mixerInfo[i].getDescription());
+				System.out.println("\tVENDOR: " + mixerInfo[i].getVendor());
+				System.out.println("\tVERSION: " + mixerInfo[i].getVersion());
 
 				if (AUDIO_MIXER_NAME.equals(mixerInfo[i].getName())) {
-					Mixer mixer = AudioSystem.getMixer(mixerInfo[i]);
+					Mixer mixer = mixerWrapper.getMixer(mixerInfo[i]);
 
 					try {
-						sourceDataLine =
-								(SourceDataLine) mixer.getLine(dataLineInfo);
+						sourceDataLine = (SourceDataLine) mixer.getLine(dataLineInfo);
 						sourceDataLine.open(getAudioFormat());
 						break;
 					} catch (LineUnavailableException e) {
@@ -149,6 +176,10 @@ public class SourceDataLineThread implements Runnable {
 	 */
 	public void startAudioStreamSpeakers() {
 
+		if (running) {
+			return;
+		}
+
 		running = true;
 		executionThread = new Thread(this);
 		executionThread.start();
@@ -164,17 +195,23 @@ public class SourceDataLineThread implements Runnable {
 			executionThread.interrupt();
 		}
 
-		sourceDataLine.flush();
-		sourceDataLine.close();
-		sourceDataLine = null;
+		if (sourceDataLine != null) {
+			sourceDataLine.flush();
+			sourceDataLine.close();
+			sourceDataLine = null;
+		}
 
-		serverDatagramSocket.close();
-		serverDatagramSocket = null;
+		if (serverDatagramSocket != null) {
+			serverDatagramSocket.close();
+			serverDatagramSocket = null;
+		}
 
 		System.out.println("StopAudioStreamSpeakers complete.");
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see java.lang.Thread#run()
 	 */
 	@Override
@@ -185,20 +222,20 @@ public class SourceDataLineThread implements Runnable {
 		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, dataLen);
 		byte[] rawData;
 
-
 		System.out.println("Waiting for initial packet");
 
 		try {
 			serverDatagramSocket.receive(datagramPacket);
 		} catch (IOException e) {
-			System.out.println("Exception occurred with initial incoming audio stream. See stack trace for more infomation.");
+			System.out.println(
+					"Exception occurred with initial incoming audio stream. See stack trace for more infomation.");
 			e.printStackTrace();
 			stopAudioStreamSpeakers();
 			return;
 		}
 
 		clientAddress.setAddress(datagramPacket.getAddress().getHostAddress());
-		System.out.println("\nGot packet from: "+datagramPacket.getAddress().getHostAddress());
+		System.out.println("\nGot packet from: " + datagramPacket.getAddress().getHostAddress());
 
 		while (running) {
 
@@ -221,10 +258,10 @@ public class SourceDataLineThread implements Runnable {
 
 			rawData = datagramPacket.getData();
 			int maxSample = 0;
-			for (int t = 0; t < rawData.length; t+=2) {
+			for (int t = 0; t < rawData.length; t += 2) {
 				int low = rawData[t];
 				t++;
-				int high = rawData[t+1];
+				int high = rawData[t + 1];
 				t++;
 				int sample = (high << 8) + (low & 0x00ff);
 				if (sample > maxSample) {
@@ -236,24 +273,22 @@ public class SourceDataLineThread implements Runnable {
 				listener.audioLevelUpdate(300, maxSample);
 			}
 
-			sourceDataLine.write(
-					datagramPacket.getData(),
-					0,
-					datagramPacket.getLength());
+			sourceDataLine.write(datagramPacket.getData(), 0, datagramPacket.getLength());
 
 		}
 
 	}
 
 	// -------------------------------------------------------------------------
-	// Private methods
+	// Protected methods
 	// -------------------------------------------------------------------------
 
 	/**
 	 * Get the audio format.
+	 *
 	 * @return Audio format to use for recording.
 	 */
-	private AudioFormat getAudioFormat() {
+	protected AudioFormat getAudioFormat() {
 
 		float sampleRate = 44100.0f;
 		int sampleSizeInBits = 16;
@@ -261,19 +296,15 @@ public class SourceDataLineThread implements Runnable {
 		boolean signed = true;
 		boolean bigEndian = true;
 
-		return new AudioFormat(
-				sampleRate,
-				sampleSizeInBits,
-				channels,
-				signed,
-				bigEndian);
+		return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
 	}
 
 	/**
 	 * Size of the playback buffer in bytes.
+	 *
 	 * @return Size of buffer
 	 */
-	private int getAudioBufferSizeBytes() {
+	protected int getAudioBufferSizeBytes() {
 
 		int frameSizeInBytes = getAudioFormat().getFrameSize();
 		int bufferLengthInFrames = sourceDataLine.getBufferSize() / 8;
@@ -281,4 +312,27 @@ public class SourceDataLineThread implements Runnable {
 		return bufferLengthInBytes;
 	}
 
+}
+
+class MixerWrapper {
+
+	/**
+	 * Get mixer info.
+	 *
+	 * @return Mixer info.
+	 */
+	public Info[] getMixerInfo() {
+		return AudioSystem.getMixerInfo();
+	}
+
+	/**
+	 * Get mixer from mixerInfo.
+	 *
+	 * @param mixerInfo
+	 *            MixerInfo to extract mixer from.
+	 * @return Mixer.
+	 */
+	public Mixer getMixer(Info mixerInfo) {
+		return AudioSystem.getMixer(mixerInfo);
+	}
 }

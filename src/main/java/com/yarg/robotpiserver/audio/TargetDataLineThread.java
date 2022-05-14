@@ -244,7 +244,7 @@ public class TargetDataLineThread implements Runnable {
 	 * Get the audio format.
 	 * @return Audio format to use for recording.
 	 */
-	private AudioFormat getAudioFormat() {
+	protected AudioFormat getAudioFormat() {
 
 		float sampleRate = 44100.0f;
 		int sampleSizeInBits = 16;
@@ -264,7 +264,7 @@ public class TargetDataLineThread implements Runnable {
 	 * Size of the playback buffer in bytes.
 	 * @return Size of buffer
 	 */
-	private int getAudioBufferSizeBytes() {
+	protected int getAudioBufferSizeBytes() {
 
 		int frameSizeInBytes = getAudioFormat().getFrameSize();
 		int bufferLengthInFrames = targetDataLine.getBufferSize() / 8;
