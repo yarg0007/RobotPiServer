@@ -25,6 +25,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 import com.yarg.robotpiserver.audio.AudioLevelListener;
+import com.yarg.robotpiserver.util.Generated;
 
 public class InputControlServer implements Runnable, AudioLevelListener{
 
@@ -65,6 +66,7 @@ public class InputControlServer implements Runnable, AudioLevelListener{
 	/**
 	 * Create instance with default initialization.
 	 */
+	@Generated // Ignore Jacoco
 	public InputControlServer() {
 		initialize();
 	}
@@ -192,6 +194,7 @@ public class InputControlServer implements Runnable, AudioLevelListener{
 		pwmController.setTalkInput(talking, talkSoundLevel, openMouth);
 	}
 
+	@Generated // Skip jacoco
 	protected void initialize() {
 
 		if (running) {

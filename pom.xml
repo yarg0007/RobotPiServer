@@ -101,6 +101,7 @@
 			</plugin>
 
 			<!-- Calculate code coverage metrics -->
+			<!-- https://www.eclemma.org/jacoco/trunk/doc/check-mojo.html -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
@@ -128,13 +129,12 @@
 						<configuration>
 							<rules>
 								<rule>
-									<element>CLASS</element>
-									<!-- <excludes> <exclude>com.asimio.demo.Application</exclude> </excludes> -->
+									<element>BUNDLE</element>
 									<limits>
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>80%</minimum>
+											<minimum>0.80</minimum>
 										</limit>
 									</limits>
 								</rule>

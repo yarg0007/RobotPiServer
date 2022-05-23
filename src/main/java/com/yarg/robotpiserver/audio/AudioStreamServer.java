@@ -1,5 +1,6 @@
 package com.yarg.robotpiserver.audio;
 
+import com.yarg.robotpiserver.util.Generated;
 import com.yarg.robotpiserver.video.VideoStream;
 
 public class AudioStreamServer implements DatagramClientReturnAddress {
@@ -14,6 +15,7 @@ public class AudioStreamServer implements DatagramClientReturnAddress {
 	private TargetDataLineThread microphoneStream;
 	private VideoStream videoStream;
 
+	@Generated // Ignore Jacoco
 	public AudioStreamServer() {
 		SERVER_ADDRESS = null;
 		incomingStream = new SourceDataLineThread(RECEIVE_PORT, this);

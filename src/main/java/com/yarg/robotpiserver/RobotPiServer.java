@@ -24,52 +24,54 @@ import java.io.IOException;
 
 import com.yarg.robotpiserver.audio.AudioStreamServer;
 import com.yarg.robotpiserver.control.InputControlServer;
+import com.yarg.robotpiserver.util.Generated;
 
+@Generated // Ignore Jacoco
 public class RobotPiServer {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
+
 		System.out.println("Setting up server and waiting for connection...");
-		
+
 		AudioStreamServer streamServer = new AudioStreamServer();
 		streamServer.startAudioStream();
-		
+
 		InputControlServer inputControls = new InputControlServer();
 		inputControls.startInputControlServer();
-		
+
 		streamServer.addAudioLevelListener(inputControls);
-		
+
 		Console console = System.console();
 		console.readLine("Press enter to quit.");
-		
+
 		System.out.println("Shutting down robot pi receiver.");
-		
+
 		streamServer.stopAudioStream();
 		streamServer.removeAudioLevelListener(inputControls);
 		System.out.println("Audio stream stopped.");
-		
+
 		inputControls.stopInputControlServer();
 		System.out.println("Input control server stopped.");
-		
+
 		String[] cmd = {
 				"/bin/sh",
 				"-c",
 				"kill $(ps aux | grep '[g]st-launch-1.0' | awk '{print $2}')",
 				"kill $(ps aux | grep '[r]aspivid' | awk '{print $2}')"
-				};
-		
+		};
+
 		try {
 			Runtime.getRuntime().exec(cmd);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		System.out.println("Video stream stopped.");
-		
+
 		System.out.println("Shutdown complete.");
 	}
 

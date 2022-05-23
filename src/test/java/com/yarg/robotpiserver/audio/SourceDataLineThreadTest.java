@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
 import javax.sound.sampled.AudioFormat;
@@ -168,23 +169,58 @@ public class SourceDataLineThreadTest {
 		verify(sourceDataLine, never()).open(Mockito.any(AudioFormat.class));
 	}
 
-	public void initializeWithAlreadyRunningThread() {
-
+	@Test
+	public void setClientAddress() {
+		doNothing().when(clientAddress).setAddress(Mockito.anyString());
+		sourceDataLineThread = new SourceDataLineThread(serverPort, null, null, clientAddress, null);
+		sourceDataLineThread.setClientAddress("localhost");
+		verify(clientAddress, times(1)).setAddress(Mockito.anyString());
 	}
 
-	public void startThreadWithoutAudioLevelListener() {
+	@Test
+	public void sendAudioToSpeaker() {
+		when(sourceDataLine.write(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt())).thenReturn(1);
+		sourceDataLineThread = new SourceDataLineThread(serverPort, null, sourceDataLine, null, null);
 
+		AudioLevelListener listener = mock(AudioLevelListener.class);
+		doNothing().when(listener).audioLevelUpdate(Mockito.anyInt(), Mockito.anyInt());
+		sourceDataLineThread.addAudioLevelListener(listener);
+
+		DatagramPacket datagramPacket = new DatagramPacket(new byte[] {0, 1, 0, 1}, 4);
+		sourceDataLineThread.sendAudioToSpeaker(datagramPacket);
+
+		verify(listener, times(1)).audioLevelUpdate(Mockito.anyInt(), Mockito.anyInt());
+		verify(sourceDataLine, times(1)).write(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt());
 	}
 
-	public void startThreadWithAudioLevelListener() {
+	@Test
+	public void sendAudioToSpeakerAfterListenerIsRemoved() {
+
+		when(sourceDataLine.write(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt())).thenReturn(1);
+		sourceDataLineThread = new SourceDataLineThread(serverPort, null, sourceDataLine, null, null);
+
+		AudioLevelListener listener = mock(AudioLevelListener.class);
+		sourceDataLineThread.addAudioLevelListener(listener);
+		sourceDataLineThread.removeAudioLevelListener(listener);
+
+		DatagramPacket datagramPacket = new DatagramPacket(new byte[] {0, 1, 0, 1}, 4);
+		sourceDataLineThread.sendAudioToSpeaker(datagramPacket);
+
+		verify(listener, never()).audioLevelUpdate(Mockito.anyInt(), Mockito.anyInt());
+	}
+
+	@Test
+	public void stopAudioStreamSpeakers() {
+
+		doNothing().when(sourceDataLine).flush();
+		doNothing().when(sourceDataLine).close();
+		doNothing().when(serverDatagramSocket).close();
+		sourceDataLineThread = new SourceDataLineThread(serverPort, serverDatagramSocket, sourceDataLine, null, null);
+		sourceDataLineThread.stopAudioStreamSpeakers();
+
+		verify(sourceDataLine, times(1)).flush();
+		verify(sourceDataLine, times(1)).close();
+		verify(serverDatagramSocket, times(1)).close();
 
 	}
-}
-
-class MyMixerInfo extends Mixer.Info {
-
-	protected MyMixerInfo(String name, String vendor, String description, String version) {
-		super(name, vendor, description, version);
-	}
-
 }

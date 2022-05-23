@@ -24,6 +24,7 @@ import java.io.IOException;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import com.yarg.robotpiserver.util.Generated;
 
 public class PWMController extends Thread {
 
@@ -97,6 +98,7 @@ public class PWMController extends Thread {
 	 * Use this to initialize the servoDriver and bus according to the default
 	 * address.
 	 */
+	@Generated // Ignore Jacoco
 	public PWMController() {
 		init();
 	}
@@ -117,6 +119,7 @@ public class PWMController extends Thread {
 	/**
 	 * Start the PWM controller loop.
 	 */
+	@Generated // Ignore Jacoco
 	public void startPWMController() {
 		running = true;
 		this.start();
@@ -250,6 +253,7 @@ public class PWMController extends Thread {
 
 	// Thread to slow vehicle down if no input occurred in last 40ms (25hz
 	// update)
+	@Generated // Skip jacoco
 	@Override
 	public void run() {
 
