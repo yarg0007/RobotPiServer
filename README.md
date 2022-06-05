@@ -12,14 +12,20 @@ Be sure to configure installation for commandline only. You can boot into GUI mo
 
 First things first, connect via an ethernet connection and do the following:
 ```
-sudo apt-get update
-sudo apt-get upgrade
-sudo reboot
-sudo apt-get install vim
-sudo apt-get install oracle-java7-jdk
+$ sudo apt-get update
+$ sudo apt-get upgrade
+$ sudo reboot
+$ sudo apt-get install vim
+## (switching to 1.8) sudo apt-get install oracle-java7-jdk
+$ sudo update-alternatives --install /usr/bin/javac javac /opt/jdk1.8.0_06/bin/javac 1
+$ sudo update-alternatives --install /usr/bin/java java /opt/jdk1.8.0_06/bin/java 1
+$ java -version
+java version "1.8.0"
+Java(TM) SE Runtime Environment (build 1.8.0-b132)
+Java HotSpot(TM) Client VM (build 25.0-b70, mixed mode)
 ```
 
-Since Oracle JDK 7 has gone out of support it is harder to get ahold of. For armv6, the apt-get JDK will not work. So, grab the JDK archive in this repo and install as noted below (borrowed from [this link](https://elinux.org/RPi_Java_JDK_Installation)):
+Since Oracle JDK 7 has gone out of support it is harder to get ahold of. For armv6, the apt-get JDK will not work. So, grab the JDK archive in this repo and install as noted below (borrowed from [this link](https://elinux.org/RPi_Java_JDK_Installation)) **NOTE** Recommend using JDK 1.8 also included in this repo. Installation instructions are the same, just use 1.8:
 
 ```
 sudo mkdir -p /opt/java
