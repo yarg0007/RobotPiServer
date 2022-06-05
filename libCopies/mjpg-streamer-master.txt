@@ -1,0 +1,2 @@
+This is a copy of the file from: https://github.com/jacksonliam/mjpg-streamer/archive/master.zip
+Backed up in the event the original file becomes unavailable. Full attribution is awarded to the original owner. THIS IS JUST A BACKUP COPY.

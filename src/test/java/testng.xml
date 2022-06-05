@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="RobotPiServer" verbose="1">
+	<test name="Complete">
+		<packages>
+			<package name="com.yarg.robotpiserver.audio" />
+			<package name="com.yarg.robotpiserver.control" />
+			<package name="com.yarg.robotpiserver.video" />
+		</packages>
+	</test>
+</suite>
