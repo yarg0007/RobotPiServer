@@ -132,7 +132,7 @@ Setup operations:
 ```
 sudo apt-get install cmake libjpeg8-dev
 
-wget https://github.com/jacksonliam/mjpg-streamer/archive/master.zip
+wget https://github.com/jacksonliam/mjpg-streamer/archive/master.zip (alternate: https://github.com/yarg0007/RobotPiServer/tree/master/libCopies/mjpg-streamer-master.zip)
 unzip master.zip
 cd mjp*g-*
 cd mjpg-*
