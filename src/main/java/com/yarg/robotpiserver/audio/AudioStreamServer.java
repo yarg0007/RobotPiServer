@@ -63,8 +63,12 @@ public class AudioStreamServer implements DatagramClientReturnAddress {
 		// sending the video stream on. Hence, the video is started here.
 		// Stopping of the video stream is also handled at the same time as the
 		// audio stream is closed.
+		//
+		// NOTE: the client address used to be required for the video stream.
+		// With the switch to MJPEG streamer we don't need that now as the client
+		// is expected to hook into the server hostname.
 		if (videoStream == null) {
-			videoStream = new VideoStream(address);
+			videoStream = new VideoStream();
 		}
 		videoStream.startVideoStream();
 	}

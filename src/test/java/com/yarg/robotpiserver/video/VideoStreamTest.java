@@ -18,12 +18,11 @@ public class VideoStreamTest {
 
 	private Runtime runtime = mock(Runtime.class);
 	private Process process = mock(Process.class);
-	private String ADDRESS = "http://localhost:8080";
 
 	@Test
 	public void videoStreamNotRunningUntilStarted() {
 
-		videoStream = new VideoStream(ADDRESS, runtime);
+		videoStream = new VideoStream(runtime);
 		boolean videoStreamRunning = videoStream.isVideoStreamRunning();
 		assertFalse(videoStreamRunning, "Video stream MUST NOT be running until stream is started.");
 	}
@@ -35,7 +34,7 @@ public class VideoStreamTest {
 		doNothing().when(process).destroy();
 		when(process.isAlive()).thenReturn(true);
 
-		videoStream = new VideoStream(ADDRESS, runtime);
+		videoStream = new VideoStream(runtime);
 		videoStream.startVideoStream();
 		verify(process, never()).destroy();
 
