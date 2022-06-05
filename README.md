@@ -146,7 +146,12 @@ alternate path: ~/mpjg-streamer-master/mjpg-streamer-experimental
 cd ~/mjpg-streamer-master/mjpg-streamer-experimental/
 export LD_LIBRARY_PATH=.
 ./mjpg_streamer -o "output_http.so -w ./www" -i "input_raspicam.so"
+
+alternate
+./mjpg_streamer -o "output_http.so -w ./www" -i "input_raspicam.so -x 1280 -y 720 -fps 15"
 ```
+
+Documentation regarding [Raspberry PI mjpeg stream configuration](https://github.com/jacksonliam/mjpg-streamer/blob/master/mjpg-streamer-experimental/plugins/input_raspicam/README.md)
 
 View stream from [http://raspi.local:8080/?action=stream](http://raspi.local:8080/?action=stream)
 
