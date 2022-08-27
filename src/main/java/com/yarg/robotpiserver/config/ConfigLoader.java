@@ -17,15 +17,19 @@ public class ConfigLoader {
 		String currentWorkingDirectory = System.getProperty("user.dir");
 		File configFile = new File(currentWorkingDirectory, "robotPiConfig.json");
 		if (configFile.exists()) {
+			System.out.println("Found config file - loading...");
 			Reader reader = null;
 			try {
 				reader = Files.newBufferedReader(configFile.toPath());
 			} catch (IOException e) {
+				e.printStackTrace();
 				return;
 			}
 			Gson gson = new Gson();
 			configuration = gson.fromJson(reader, Config.class);
+			System.out.println("Config file loaded.");
 		} else {
+			System.out.println("Using default configuration.");
 			configuration = new Config();
 		}
 	}

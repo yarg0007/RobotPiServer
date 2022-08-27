@@ -160,6 +160,7 @@ public class InputControlServer implements Runnable, AudioLevelListener{
 
 		rawData = datagramPacket.getData();
 		data = new String(rawData);
+		System.out.println("Data packet received: " + data);
 		dataDelimiterIndex = data.indexOf(":");
 		if (dataDelimiterIndex < 0) {
 			return;
