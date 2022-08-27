@@ -101,6 +101,7 @@ public class SourceDataLineThread implements Runnable {
 	 * Initialize the instance. Setup Datagram server and then do all remaining
 	 * the setup magic. Must be called after getting class instance.
 	 */
+	@Generated // Ignore Jacoco
 	public void initialize() {
 
 		if (running) {

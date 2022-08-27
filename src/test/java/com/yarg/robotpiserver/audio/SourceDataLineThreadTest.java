@@ -20,6 +20,7 @@ import javax.sound.sampled.Mixer.Info;
 import javax.sound.sampled.SourceDataLine;
 
 import org.mockito.Mockito;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -39,6 +40,13 @@ public class SourceDataLineThreadTest {
 		clientAddress = mock(DatagramClientReturnAddress.class);
 		serverPort = 9999;
 		mixerWrapper = mock(MixerWrapper.class);
+	}
+
+	@AfterMethod
+	public void release() {
+		if (sourceDataLineThread != null) {
+			sourceDataLineThread.stopAudioStreamSpeakers();
+		}
 	}
 
 	@Test
@@ -125,7 +133,7 @@ public class SourceDataLineThreadTest {
 		verify(sourceDataLine, times(1)).open(Mockito.any(AudioFormat.class));
 	}
 
-	@Test
+	@Test(expectedExceptions = IllegalStateException.class)
 	public void initializeWithUnmatchedMixer() throws Exception {
 
 		Line.Info lineInfo = mock(Line.Info.class);
@@ -145,9 +153,6 @@ public class SourceDataLineThreadTest {
 
 		sourceDataLineThread = new SourceDataLineThread(serverPort, serverDatagramSocket, null, clientAddress, mixerWrapper);
 		sourceDataLineThread.initialize();
-		verify(serverDatagramSocket, times(1)).close();
-		verify(sourceDataLine, never()).start();
-		verify(sourceDataLine, never()).open(Mockito.any(AudioFormat.class));
 	}
 
 	@Test
@@ -164,7 +169,7 @@ public class SourceDataLineThreadTest {
 
 		sourceDataLineThread = new SourceDataLineThread(serverPort, serverDatagramSocket, null, clientAddress, mixerWrapper);
 		sourceDataLineThread.initialize();
-		verify(serverDatagramSocket, times(2)).close();
+		verify(serverDatagramSocket, times(1)).close();
 		verify(sourceDataLine, never()).start();
 		verify(sourceDataLine, never()).open(Mockito.any(AudioFormat.class));
 	}

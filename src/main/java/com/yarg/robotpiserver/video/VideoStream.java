@@ -2,11 +2,13 @@ package com.yarg.robotpiserver.video;
 
 import java.io.IOException;
 
+import com.yarg.robotpiserver.config.ConfigLoader;
+
 public class VideoStream {
 
 	private Runtime runtime;
 	private Process videoStreamProcess;
-	private static final String MJPEG_COMMAND = "./mjpg_streamer -o \"output_http.so -w ./www\" -i \"input_raspicam.so -x 1280 -y 720 -fps 15\"";
+	private static final String MJPEG_COMMAND = "./mjpg_streamer -o \"output_http.so -w ./www\" -i \"input_raspicam.so -x %d -y %d -fps %d\"";
 
 	public VideoStream() {
 		this.runtime = Runtime.getRuntime();
@@ -43,7 +45,8 @@ public class VideoStream {
 		stopVideoStream();
 
 		try {
-			String[] cmd = { "/bin/sh", "-c", "cd ~/mjpg-streamer-master/mjpg-streamer-experimental/", "export LD_LIBRARY_PATH=.", MJPEG_COMMAND };
+			String mjpegCommand = String.format(MJPEG_COMMAND, ConfigLoader.getInstance().getVideoStreamWidth(), ConfigLoader.getInstance().getVideoStreamHeight(), ConfigLoader.getInstance().getVideoStreamFPS());
+			String[] cmd = { "/bin/sh", "-c", "cd ~/mjpg-streamer-master/mjpg-streamer-experimental/", "export LD_LIBRARY_PATH=.", mjpegCommand };
 
 			videoStreamProcess = runtime.exec(cmd);
 		} catch (IOException e) {

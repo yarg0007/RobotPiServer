@@ -115,6 +115,7 @@ public class TargetDataLineThread implements Runnable {
 	 * Initialize the instance. Setup Datagram client to connect and then do all
 	 * the setup magic. Must be called after getting class instance.
 	 */
+	@Generated // Ignore Jacoco
 	public void initialize() {
 
 		if (running) {

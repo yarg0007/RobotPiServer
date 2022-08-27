@@ -25,11 +25,10 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 import com.yarg.robotpiserver.audio.AudioLevelListener;
+import com.yarg.robotpiserver.config.ConfigLoader;
 import com.yarg.robotpiserver.util.Generated;
 
 public class InputControlServer implements Runnable, AudioLevelListener{
-
-	private static final int PORT = 49801;
 
 	private Thread executionThread;
 	private boolean running = false;
@@ -216,7 +215,7 @@ public class InputControlServer implements Runnable, AudioLevelListener{
 		}
 
 		try {
-			serverDatagramSocket = new DatagramSocket(PORT);
+			serverDatagramSocket = new DatagramSocket(ConfigLoader.getInstance().getInputControlDatagramPort());
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
