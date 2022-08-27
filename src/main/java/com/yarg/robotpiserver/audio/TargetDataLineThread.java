@@ -33,11 +33,10 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.Mixer.Info;
 import javax.sound.sampled.TargetDataLine;
 
+import com.yarg.robotpiserver.config.ConfigLoader;
 import com.yarg.robotpiserver.util.Generated;
 
 public class TargetDataLineThread implements Runnable {
-
-	private String AUDIO_MIXER_NAME = "Set [plughw:1,0]";
 
 	/** The datagram client. Setup to only allow a single client connection. */
 	private DatagramSocket clientDatagramSocket = null;
@@ -165,7 +164,7 @@ public class TargetDataLineThread implements Runnable {
 				System.out.println("\tVENDOR: " + mixerInfo[i].getVendor());
 				System.out.println("\tVERSION: " + mixerInfo[i].getVersion());
 
-				if (AUDIO_MIXER_NAME.equals(mixerInfo[i].getName())) {
+				if (ConfigLoader.getInstance().getTargetDataLineMixerName().equals(mixerInfo[i].getName())) {
 					Mixer mixer = mixerWrapper.getMixer(mixerInfo[i]);
 
 					try {
@@ -182,7 +181,7 @@ public class TargetDataLineThread implements Runnable {
 			}
 
 			if (targetDataLine == null) {
-				return;
+				throw new IllegalStateException("TargetDataLineThread: Unable to find audio mixer matching: " + ConfigLoader.getInstance().getTargetDataLineMixerName());
 			}
 
 			targetDataLine.start();

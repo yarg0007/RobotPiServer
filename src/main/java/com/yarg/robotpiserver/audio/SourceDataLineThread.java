@@ -32,11 +32,10 @@ import javax.sound.sampled.Mixer;
 import javax.sound.sampled.Mixer.Info;
 import javax.sound.sampled.SourceDataLine;
 
+import com.yarg.robotpiserver.config.ConfigLoader;
 import com.yarg.robotpiserver.util.Generated;
 
 public class SourceDataLineThread implements Runnable {
-
-	private String AUDIO_MIXER_NAME = "Set [plughw:1,0]";
 
 	private int serverPort;
 
@@ -141,7 +140,7 @@ public class SourceDataLineThread implements Runnable {
 				System.out.println("\tVENDOR: " + mixerInfo[i].getVendor());
 				System.out.println("\tVERSION: " + mixerInfo[i].getVersion());
 
-				if (AUDIO_MIXER_NAME.equals(mixerInfo[i].getName())) {
+				if (ConfigLoader.getInstance().getSourceDataLineMixerName().equals(mixerInfo[i].getName())) {
 					Mixer mixer = mixerWrapper.getMixer(mixerInfo[i]);
 
 					try {
@@ -159,7 +158,7 @@ public class SourceDataLineThread implements Runnable {
 
 			// If still null, we didn't get a line. Bail.
 			if (sourceDataLine == null) {
-				return;
+				throw new IllegalStateException("SourceDataLineThread: Unable to find audio mixer matching: " + ConfigLoader.getInstance().getSourceDataLineMixerName());
 			}
 
 			sourceDataLine.start();
