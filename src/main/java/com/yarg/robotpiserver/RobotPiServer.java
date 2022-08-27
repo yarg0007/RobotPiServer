@@ -66,13 +66,13 @@ public class RobotPiServer {
 		try {
 			Runtime.getRuntime().exec(cmd);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Executing command failed:\n" + cmd);
 			e.printStackTrace();
 		}
 
 		System.out.println("Video stream stopped.");
-
 		System.out.println("Shutdown complete.");
+		System.exit(0);
 	}
 
 }

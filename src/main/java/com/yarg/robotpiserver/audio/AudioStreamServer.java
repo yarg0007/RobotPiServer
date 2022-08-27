@@ -35,9 +35,17 @@ public class AudioStreamServer implements DatagramClientReturnAddress {
 	}
 
 	public void stopAudioStream() {
-		videoStream.stopVideoStream();
-		incomingStream.stopAudioStreamSpeakers();
-		microphoneStream.stopAudioStreamMicrophone();
+		if (videoStream != null) {
+			videoStream.stopVideoStream();
+		}
+
+		if (incomingStream != null) {
+			incomingStream.stopAudioStreamSpeakers();
+		}
+
+		if (microphoneStream != null) {
+			microphoneStream.stopAudioStreamMicrophone();
+		}
 	}
 
 	public void addAudioLevelListener(AudioLevelListener listener) {
