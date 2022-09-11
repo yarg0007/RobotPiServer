@@ -54,11 +54,11 @@ public class SourceDataLineThreadTest {
 
 		sourceDataLineThread = new SourceDataLineThread(serverPort, serverDatagramSocket, sourceDataLine, clientAddress, mixerWrapper);
 		AudioFormat audioFormat = sourceDataLineThread.getAudioFormat();
-		assertEquals(audioFormat.getChannels(), 1, "Audio format channel does not match expected.");
+		assertEquals(audioFormat.getChannels(), 2, "Audio format channel does not match expected.");
 		assertEquals(audioFormat.getSampleRate(), 44100.0f, "Sample rate does not match expected.");
 		assertEquals(audioFormat.getSampleSizeInBits(), 16, "Sample size, in bits, does not match expected.");
 		assertEquals(audioFormat.isBigEndian(), true, "Big endianness does not match expected");
-		assertEquals(audioFormat.getFrameSize(), 2, "Frame size does not match expected.");
+		assertEquals(audioFormat.getFrameSize(), 4, "Frame size does not match expected.");
 		assertEquals(audioFormat.getFrameRate(), 44100.0f, "Frame rate does not match expected.");
 		assertEquals(audioFormat.getEncoding(), Encoding.PCM_SIGNED, "Encoding does not match expected.");
 	}
@@ -69,7 +69,7 @@ public class SourceDataLineThreadTest {
 		when(sourceDataLine.getBufferSize()).thenReturn(1024);
 		sourceDataLineThread = new SourceDataLineThread(serverPort, serverDatagramSocket, sourceDataLine, clientAddress, mixerWrapper);
 		int actualSize = sourceDataLineThread.getAudioBufferSizeBytes();
-		assertEquals(actualSize, 256, "Audio buffer size does not match expected.");
+		assertEquals(actualSize, 512, "Audio buffer size does not match expected.");
 	}
 
 	@Test

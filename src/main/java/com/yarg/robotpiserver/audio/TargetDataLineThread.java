@@ -258,6 +258,8 @@ public class TargetDataLineThread implements Runnable {
 			}
 		}
 
+		System.out.println("Microphone thread now sending to: " + serverAddress.getAddress());
+
 		InetAddress address;
 
 		try {

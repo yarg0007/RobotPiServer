@@ -240,7 +240,9 @@ public class SourceDataLineThread implements Runnable {
 			return;
 		}
 
-		setClientAddress(datagramPacket.getAddress().getHostAddress());
+		String hostAddress = datagramPacket.getAddress().getHostAddress();
+		System.out.println("Received connection from: " + hostAddress);
+		setClientAddress(hostAddress);
 
 		while (running) {
 
@@ -319,7 +321,7 @@ public class SourceDataLineThread implements Runnable {
 
 		float sampleRate = 44100.0f;
 		int sampleSizeInBits = 16;
-		int channels = 1;
+		int channels = 2;
 		boolean signed = true;
 		boolean bigEndian = true;
 
