@@ -158,6 +158,10 @@ public class InputControlServer implements Runnable, AudioLevelListener{
 			return;
 		}
 
+		if (datagramPacket != null && datagramPacket.getAddress() != null) {
+			System.out.println(datagramPacket.getAddress().toString());
+		}
+
 		rawData = datagramPacket.getData();
 		data = new String(rawData);
 		//		System.out.println("Data packet received: " + data);
