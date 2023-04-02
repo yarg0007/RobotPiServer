@@ -6,4 +6,73 @@ info:
   version: 1.0.0
 servers:
   - url: robotpi.local
-    description: Robot PI Server
+    description: Local Robot PI Server
+paths:
+  /connect:
+    GET:
+      description:  >-
+        Connect to the Robot PI server and establish a client connection. Only one client connection at a time is permitted. Client will automatically be disconnected if the connection is lost in excess of the timeout period defined in the server configuration.
+      summary: >-
+        Connect to the Robot PI server.
+      responses:
+        200:
+          description: >-
+            Success response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectSuccessResponse'
+        500:
+          description: >-
+            Unsuccessful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectErrorResponse'
+  /disconnect:
+    POST:
+      description: >-
+        Halt all streams and close the connection with the server.
+      summary: >-
+        Disconnect from the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisconnectRequest'
+      responses:
+        200:
+          description: >-
+            Success response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisconnectResponse'
+components:
+  schemas:
+    ConnectSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    ConnectErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errorCode:
+          type: integer
+    DisconnectRequest:
+      type: object
+      properties:
+        shutdown:
+          type: boolean
+          default: false
+          description: >-
+            Tell the Raspberry PI server to disconnect and shutdown. The server will require a full system start to resume.
+    DisconnectResponse:
+      type: object
+      properties:
+        message:
+          type: string
