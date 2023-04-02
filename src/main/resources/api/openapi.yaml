@@ -1,0 +1,9 @@
+openapi: 3.0.0
+info:
+  description: >-
+    Service interface for Robot PI controller. Used for establishing a connection to the Robot PI server.
+  title: Robot PI Server
+  version: 1.0.0
+servers:
+  - url: robotpi.local
+    description: Robot PI Server
