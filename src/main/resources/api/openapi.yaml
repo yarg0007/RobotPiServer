@@ -9,7 +9,7 @@ servers:
     description: Local Robot PI Server
 paths:
   /connect:
-    GET:
+    get:
       description:  >-
         Connect to the Robot PI server and establish a client connection. Only one client connection at a time is permitted. Client will automatically be disconnected if the connection is lost in excess of the timeout period defined in the server configuration.
       summary: >-
@@ -30,7 +30,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConnectErrorResponse'
   /disconnect:
-    POST:
+    post:
       description: >-
         Halt all streams and close the connection with the server.
       summary: >-
