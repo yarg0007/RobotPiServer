@@ -5,7 +5,7 @@ info:
   title: Robot PI Server
   version: 1.0.0
 servers:
-  - url: robotpi.local
+  - url: http://robotpi.local
     description: Local Robot PI Server
 paths:
   /connect:
