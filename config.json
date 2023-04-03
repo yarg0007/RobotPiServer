@@ -1,0 +1,5 @@
+{
+	"serverIpAddress": "robotpi.local",
+	"serverPort": 1234,
+	"serverBackLogging": 10
+}

@@ -64,7 +64,7 @@ public class Configuration {
 
     private void init() {
         String currentWorkingDirectory = System.getProperty("user.dir");
-        File configFile = new File(currentWorkingDirectory, "serverConfig.json");
+        File configFile = new File(currentWorkingDirectory, "config.json");
         parseConfigFile(configFile);
     }
 
