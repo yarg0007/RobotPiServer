@@ -76,3 +76,30 @@ components:
       properties:
         message:
           type: string
+    ConfigurationModel:
+      type: object
+      description: >-
+        Server configuration file model. A file 'config.json' MUST reside in the same folder as the service jar. This config will be read to define the configuration to use for the service. The service WILL NOT start without this configuration being provided and complete.
+      required:
+        - serverIpAddress
+        - serverPort
+        - serverBackLogging
+      properties:
+        serverIpAddress:
+          type: string
+          default: "localhost"
+          example: "localhost"
+          readOnly: true
+          nullable: false
+        serverPort:
+          type: integer
+          default: 8001
+          example: 8001
+          readOnly: true
+          nullable: false
+        serverBackLogging:
+          type: integer
+          default: 0
+          example: 0
+          readOnly: true
+          nullable: false
