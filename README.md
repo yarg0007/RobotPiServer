@@ -4,6 +4,9 @@ Server application that runs on the Raspberry Pi and receives control commands f
 
 Example robot: BruceBot1000 https://www.youtube.com/watch?v=05eA5SQ0DeI
 
+## Swagger UI - Server Configuration Model and API definitions
+[Swagger UI](https://yarg0007.github.io/RobotPiServer/swaggerdist/index.html)
+
 ## General Instructions / Initial Setup
 ---
 This has been tested with Raspbian running on the Raspberry PI. There shouldn't be any problem executing on another distro as long as the JVM is supported. Be sure to install with support for WiFi and the Raspberry PI camera when choosing installation settings.
