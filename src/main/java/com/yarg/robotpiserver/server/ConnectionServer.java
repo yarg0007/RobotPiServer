@@ -11,6 +11,10 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * Uses com.sun.net.HttpServer
+ * https://docs.oracle.com/javase/8/docs/jre/api/net/httpserver/spec/com/sun/net/httpserver/package-summary.html
+ */
 public class ConnectionServer {
 
     private ConnectionServiceInterface connectionService;
@@ -22,11 +26,18 @@ public class ConnectionServer {
     }
 
     private void init() throws IOException {
+
+        // Get the configuration model that defines how we are to setup the server.
         ConfigurationModel model = Configuration.getInstance().getConfigurationModel();
 
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
 
-        server = HttpServer.create(new InetSocketAddress(model.getServerIpAddress(), model.getServerPort()), model.getServerBackLogging());
+        if (model.getServerIpAddress() == null) {
+            server = HttpServer.create(new InetSocketAddress(model.getServerPort()), model.getServerBackLogging());
+        } else {
+            server = HttpServer.create(new InetSocketAddress(model.getServerIpAddress(), model.getServerPort()), model.getServerBackLogging());
+        }
+
         server.createContext("/connect", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {

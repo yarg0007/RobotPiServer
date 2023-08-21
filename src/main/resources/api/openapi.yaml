@@ -51,18 +51,18 @@ paths:
                 $ref: '#/components/schemas/DisconnectResponse'
 components:
   schemas:
-    ConnectSuccessResponse:
+    ConnectResponse:
       type: object
       properties:
         message:
           type: string
     ConnectErrorResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        errorCode:
-          type: integer
+      allOf:
+        - $ref: '#/components/schemas/ConnectResponse'
+        - type: object
+          properties:
+            errorCode:
+              type: integer
     DisconnectRequest:
       type: object
       properties:
