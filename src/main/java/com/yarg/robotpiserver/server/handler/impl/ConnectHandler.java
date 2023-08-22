@@ -35,13 +35,15 @@ public class ConnectHandler extends HandlerBase<ConnectResponse> {
             responseCode = HandlerResponseCode.INTERNAL_SERVER_ERROR;
         } else {
             InetSocketAddress remoteAddress = exchange.getRemoteAddress();
-            InetAddress inetAddress = remoteAddress.getAddress();
-            inetAddress.getHostAddress();
+            ClientConnection.getInstance().connectClient(remoteAddress);
+
             response = new ConnectResponse();
             response.setMessage("Connection established.");
             responseCode = HandlerResponseCode.SUCCESS;
 
             // TODO: Start connections back to client.
+            InetAddress inetAddress = remoteAddress.getAddress();
+            inetAddress.getHostAddress();
         }
 
         return new HandlerResponse<ConnectResponse>(responseCode, response);

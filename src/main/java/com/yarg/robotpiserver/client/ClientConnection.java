@@ -27,7 +27,7 @@ public class ClientConnection {
      * @return True if a client connection already exists, false otherwise.
      */
     public boolean hasConnection() {
-        return (clientAddress == null);
+        return (clientAddress != null);
     }
 
     /**

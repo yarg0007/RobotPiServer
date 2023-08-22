@@ -5,9 +5,11 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.yarg.gen.models.ConfigurationModel;
 import com.yarg.robotpiserver.config.Configuration;
+import com.yarg.robotpiserver.server.handler.HandlerBase;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -17,11 +19,15 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ConnectionServer {
 
-    private ConnectionServiceInterface connectionService;
+    private final HandlerBase<?> connectHandler;
+    private final HandlerBase<?> disconnectHandler;
     private HttpServer server;
 
-    public ConnectionServer(ConnectionServiceInterface connectionService) throws IOException {
-        this.connectionService = connectionService;
+    public ConnectionServer(HandlerBase<?> connectHandler, HandlerBase<?> disconnectHandler) throws IOException {
+        Objects.requireNonNull(connectHandler, "Connect handler MUST NOT be null.");
+        Objects.requireNonNull(disconnectHandler, "Disconnect handler MUST NOT be null.");
+        this.connectHandler = connectHandler;
+        this.disconnectHandler = disconnectHandler;
         init();
     }
 
@@ -38,21 +44,18 @@ public class ConnectionServer {
             server = HttpServer.create(new InetSocketAddress(model.getServerIpAddress(), model.getServerPort()), model.getServerBackLogging());
         }
 
-        server.createContext("/connect", new HttpHandler() {
-            @Override
-            public void handle(HttpExchange exchange) throws IOException {
-                connectionService.handleConnect(exchange);
-            }
-        });
-        server.createContext("/disconnect", new HttpHandler() {
-            @Override
-            public void handle(HttpExchange exchange) throws IOException {
-                connectionService.handleDisconnect(exchange);
-            }
-        });
+        server.createContext("/connect", connectHandler);
+        server.createContext("/disconnect", disconnectHandler);
         server.setExecutor(threadPoolExecutor);
+    }
+
+    public void startServer() {
         server.start();
-        System.out.println("Server started: " + model.toString());
+        System.out.println("Server started: " + Configuration.getInstance().getConfigurationModel().toString());
+    }
+
+    public InetSocketAddress getServerAddress() {
+        return server.getAddress();
     }
 
     public void stopServer() {
