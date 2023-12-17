@@ -1,0 +1,91 @@
+openapi: 3.0.0
+info:
+  description: >-
+    Service interface for Robot PI controller. Used for establishing a connection to the Robot PI server.
+  title: Robot PI Server
+  version: 1.0.0
+servers:
+  - url: http://robotpi.local
+    description: Local Robot PI Server
+paths:
+  /configuration:
+    get:
+      description:  >-
+        Server configuration. Defines the execution configuration the Robot Pi Server instance will execute with.
+      summary: >-
+        Robot PI Server Configuration.
+      responses:
+        200:
+          description: >-
+            Success response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationModel'
+components:
+  schemas:
+    ConfigurationModel:
+      type: object
+      description: >-
+        Server configuration file model. A file 'config.json' MUST reside in the same folder as the service jar. This config will be read to define the configuration to use for the service. The service WILL NOT start without this configuration being provided and complete.
+      required:
+        - serverPort
+        - serverBackLogging
+      properties:
+        serverIpAddress:
+          description: This is the server's IP address that the server will be registered to. Generally this will be null so as not to deviate from the IP address of the system the server is running on.
+          type: string
+          pattern: ^([0-9]{1,3}\.){3}([0-9]{1,3})$
+          example: "localhost"
+        serverPort:
+          description: This is the port the server will be listening on.
+          type: integer
+          format: int32
+          default: 8001
+          example: 8001
+          maximum: 65535
+          minimum: 0
+        serverBackLogging:
+          description: >-
+            This represents the maximum number of incoming TCP connections
+            which the system will queue internally. Connections are queued while they are waiting to
+            be accepted by the HttpServer. When the limit is reached, further connections may be
+            rejected (or possibly ignored) by the underlying TCP implementation.
+          type: integer
+          format: int32
+          default: 0
+          example: 0
+          minimum: 0
+        inputControlServerPort:
+          description: >-
+            This is the port the input control server listens on.
+          type: integer
+          format: int32
+          default: 49801
+          example: 49801
+          maximum: 65535
+          minimum: 0
+        audioStreamServer:
+          type: object
+          properties:
+            receivePort:
+              type: integer
+              format: int32
+              default: 49809
+              example: 49809
+              maximum: 65535
+              minimum: 0
+            sendPort:
+              type: integer
+              format: int32
+              default: 49808
+              example: 49808
+              maximum: 65535
+              minimum: 0
+        videoStreamPort:
+          type: integer
+          format: int32
+          default: 5000
+          example: 5000
+          maximum: 65535
+          minimum: 0
