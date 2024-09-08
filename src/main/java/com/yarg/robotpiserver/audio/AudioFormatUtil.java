@@ -4,6 +4,11 @@ import javax.sound.sampled.AudioFormat;
 
 public class AudioFormatUtil {
 
+    /**
+     * Get the audio format.
+     *
+     * @return Audio format to use for recording.
+     */
     public static AudioFormat getAudioFormat() {
 
         float sampleRate = 44100.0f;
