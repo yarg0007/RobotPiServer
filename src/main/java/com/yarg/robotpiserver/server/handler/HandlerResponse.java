@@ -1,5 +1,8 @@
 package com.yarg.robotpiserver.server.handler;
 
+import com.yarg.robotpiserver.util.Generated;
+
+@Generated
 public class HandlerResponse<ResponseModel> {
 
     private final HandlerResponseCode responseCode;

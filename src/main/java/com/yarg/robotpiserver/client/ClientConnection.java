@@ -44,4 +44,12 @@ public class ClientConnection {
     public void connectClient(InetSocketAddress clientAddress) {
         this.clientAddress = clientAddress;
     }
+
+    /**
+     * Get the IP address of the client connection.
+     * @return Client connection IP address.
+     */
+    public String getClientIpAddress() {
+        return clientAddress.getAddress().toString();
+    }
 }

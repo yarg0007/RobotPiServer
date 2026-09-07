@@ -19,83 +19,56 @@ package com.yarg.robotpiserver.audio;
  * under the License.
  */
 
+import com.yarg.robotpiserver.util.Generated;
+
+import javax.sound.sampled.*;
+import javax.sound.sampled.Mixer.Info;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.Mixer.Info;
-import javax.sound.sampled.SourceDataLine;
-
-import com.yarg.robotpiserver.util.Generated;
-
+/**
+ * Takes an audio input stream from the client and sends it to the speaker.
+ */
 public class SourceDataLineThread implements Runnable {
 
+	/** Name of the audio mixer to use. */
 	private String AUDIO_MIXER_NAME = "Set [plughw:1,0]";
 
-	private int serverPort;
+	/** Port to receive audio stream on. */
+	private int port;
 
 	/** The connected client. Setup to only allow a single client connection. */
 	private DatagramSocket serverDatagramSocket = null;
 
 	/** Flag execution state of thread. */
 	private boolean running;
+
+	/** Thread executing this runnable. */
 	private Thread executionThread;
 
 	/** Plays audio to the speakers. */
 	private SourceDataLine sourceDataLine;
-
-	/** Interface for setting the client address to send audio back to. */
-	private DatagramClientReturnAddress clientAddress;
 
 	/**
 	 * Audio level listeners that would like to response to audio level changes.
 	 */
 	private ArrayList<AudioLevelListener> audioLevelListeners = new ArrayList<AudioLevelListener>();;
 
+	/** Wrapper around AudioSystem static methods. */
 	private MixerWrapper mixerWrapper;
 
 	/**
 	 * Default constructor.
 	 */
 	@Generated // Ignore Jacoco
-	public SourceDataLineThread(int serverPort, DatagramClientReturnAddress clientAddress) {
-		this.serverPort = serverPort;
-		this.clientAddress = clientAddress;
+	public SourceDataLineThread(int port) {
+		this.port = port;
 		audioLevelListeners.clear();
 		mixerWrapper = new MixerWrapper();
 		initialize();
-	}
-
-	/**
-	 * Specify the dependencies to use.
-	 *
-	 * @param serverPort
-	 *            Server port to connect to for datagram socket.
-	 * @param serverDatagramSocket
-	 *            Connected client - setup to only allow a single client
-	 *            connection.
-	 * @param sourceDataLine
-	 *            Plays audio to the speakers.
-	 * @param clientAddress
-	 *            Interface for setting the client address to send audio back
-	 *            to.
-	 * @param mixerWrapper
-	 *            Mixer wrapper instance.
-	 */
-	@Generated // Ignore Jacoco
-	public SourceDataLineThread(int serverPort, DatagramSocket serverDatagramSocket, SourceDataLine sourceDataLine,
-			DatagramClientReturnAddress clientAddress, MixerWrapper mixerWrapper) {
-		this.serverPort = serverPort;
-		this.serverDatagramSocket = serverDatagramSocket;
-		this.sourceDataLine = sourceDataLine;
-		this.clientAddress = clientAddress;
-		this.mixerWrapper = mixerWrapper;
 	}
 
 	/**
@@ -123,7 +96,7 @@ public class SourceDataLineThread implements Runnable {
 		}
 
 		try {
-			serverDatagramSocket = new DatagramSocket(serverPort);
+			serverDatagramSocket = new DatagramSocket(port);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
@@ -132,7 +105,7 @@ public class SourceDataLineThread implements Runnable {
 
 			Info[] mixerInfo = mixerWrapper.getMixerInfo();
 
-			DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, getAudioFormat());
+			DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, AudioFormatUtil.getAudioFormat());
 
 			for (int i = 0; i < mixerInfo.length; i++) {
 				System.out.println("SOURCE DATA LINE MIXER: " + i);
@@ -146,7 +119,7 @@ public class SourceDataLineThread implements Runnable {
 
 					try {
 						sourceDataLine = (SourceDataLine) mixer.getLine(dataLineInfo);
-						sourceDataLine.open(getAudioFormat());
+						sourceDataLine.open(AudioFormatUtil.getAudioFormat());
 						break;
 					} catch (LineUnavailableException e) {
 						e.printStackTrace();
@@ -240,8 +213,6 @@ public class SourceDataLineThread implements Runnable {
 			return;
 		}
 
-		setClientAddress(datagramPacket.getAddress().getHostAddress());
-
 		while (running) {
 
 			try {
@@ -262,7 +233,6 @@ public class SourceDataLineThread implements Runnable {
 			}
 
 			sendAudioToSpeaker(datagramPacket);
-
 		}
 	}
 
@@ -298,33 +268,6 @@ public class SourceDataLineThread implements Runnable {
 		sourceDataLine.write(datagramPacket.getData(), 0, datagramPacket.getLength());
 	}
 
-	/**
-	 * Set the client address to use for communicating with the client.
-	 *
-	 * @param clientHostAddress
-	 *            Client host address.
-	 */
-	protected void setClientAddress(String clientHostAddress) {
-
-		clientAddress.setAddress(clientHostAddress);
-		System.out.println("\nGot packet from: " + clientHostAddress);
-	}
-
-	/**
-	 * Get the audio format.
-	 *
-	 * @return Audio format to use for recording.
-	 */
-	protected AudioFormat getAudioFormat() {
-
-		float sampleRate = 44100.0f;
-		int sampleSizeInBits = 16;
-		int channels = 1;
-		boolean signed = true;
-		boolean bigEndian = true;
-
-		return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
-	}
 
 	/**
 	 * Size of the playback buffer in bytes.
@@ -333,7 +276,7 @@ public class SourceDataLineThread implements Runnable {
 	 */
 	protected int getAudioBufferSizeBytes() {
 
-		int frameSizeInBytes = getAudioFormat().getFrameSize();
+		int frameSizeInBytes = AudioFormatUtil.getAudioFormat().getFrameSize();
 		int bufferLengthInFrames = sourceDataLine.getBufferSize() / 8;
 		int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
 		return bufferLengthInBytes;

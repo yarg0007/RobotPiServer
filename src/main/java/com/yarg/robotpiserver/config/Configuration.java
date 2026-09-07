@@ -6,7 +6,6 @@ import com.yarg.gen.models.ConfigurationModel;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 
 public class Configuration {
