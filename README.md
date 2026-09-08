@@ -84,6 +84,31 @@ ssh pi@<pi-ip> "cat /tmp/robotpi.log"
 ssh pi@<pi-ip> "sudo pkill -f 'java -jar'"
 ```
 
+### Auto-start on Boot
+
+To have the server start automatically whenever the Pi boots, install it as a systemd service:
+
+```bash
+# From the Pi (after copying the JAR and config.json to /home/pi/)
+scp scripts/robotpiserver.service pi@<pi-ip>:~/
+scp scripts/install-service.sh pi@<pi-ip>:~/
+ssh pi@<pi-ip> "bash ~/install-service.sh"
+```
+
+After this, the server starts on every boot without any SSH action. Useful commands on the Pi:
+
+| Command | Purpose |
+|---|---|
+| `sudo systemctl status robotpiserver` | Check if the service is running |
+| `sudo journalctl -u robotpiserver -f` | Follow live log output |
+| `sudo systemctl restart robotpiserver` | Restart after updating the JAR |
+| `sudo systemctl stop robotpiserver` | Stop the service |
+| `sudo systemctl disable robotpiserver` | Remove from boot |
+
+> **Note:** If the JAR filename changes (e.g., after a version bump), update `ExecStart` in `/etc/systemd/system/robotpiserver.service` and run `sudo systemctl daemon-reload`.
+
+> **Log location:** When running as a service, logs go to `/var/log/robotpi.log`. When started manually via `nohup`, logs go to `/tmp/robotpi.log`.
+
 ---
 
 ## HTTP API

@@ -153,6 +153,46 @@ Use this IP address in the RobotPiController app's SSH Host config field.
 
 ---
 
+## 8. Auto-start on Boot (Optional)
+
+To have the server start automatically when the Pi boots (no SSH required after reboot):
+
+**Copy the service files to the Pi:**
+```bash
+# From your development machine, in the RobotPiServer project root:
+scp scripts/robotpiserver.service pi@<pi-ip>:~/
+scp scripts/install-service.sh pi@<pi-ip>:~/
+```
+
+**Install and start the service on the Pi:**
+```bash
+ssh pi@<pi-ip> "bash ~/install-service.sh"
+```
+
+**Verify the service is running:**
+```bash
+ssh pi@<pi-ip> "sudo systemctl status robotpiserver"
+```
+
+You should see `active (running)`. After this, the server will start automatically on every boot.
+
+**Useful service management commands (run on the Pi):**
+
+| Command | Purpose |
+|---|---|
+| `sudo systemctl status robotpiserver` | Check status |
+| `sudo journalctl -u robotpiserver -f` | Follow live logs |
+| `sudo systemctl restart robotpiserver` | Restart after JAR update |
+| `sudo systemctl stop robotpiserver` | Stop the service |
+| `sudo systemctl disable robotpiserver` | Remove from boot |
+
+> **After updating the JAR:** Copy the new JAR to `/home/pi/`, then `sudo systemctl restart robotpiserver`.
+> If the JAR filename changes (e.g., new version), also update `ExecStart` in `/etc/systemd/system/robotpiserver.service` and run `sudo systemctl daemon-reload`.
+
+> **Log location:** Service logs go to `/var/log/robotpi.log`. Logs from a manual `nohup` start go to `/tmp/robotpi.log`.
+
+---
+
 ## Next Steps
 
 See the main [README](../README.md) for:
