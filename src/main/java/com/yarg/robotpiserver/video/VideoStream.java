@@ -48,8 +48,10 @@ public class VideoStream {
 
 		stopVideoStream();
 
+		// -ih embeds SPS/PPS headers at every IDR frame so reconnecting clients
+		// can sync immediately without "damaged access unit" errors.
 		String videoCommand = String.format(
-				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -o - | " +
+				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -ih -o - | " +
 				"/usr/bin/cvlc -vvv stream:///dev/stdin --sout '#rtp{sdp=rtsp://:%d/}' :demux=h264",
 				port);
 
