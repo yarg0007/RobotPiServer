@@ -259,14 +259,7 @@ public class TargetDataLineThread implements Runnable {
 	 * @return Audio format to use for recording.
 	 */
 	protected AudioFormat getAudioFormat() {
-
-		float sampleRate = 44100.0f;
-		int sampleSizeInBits = 16;
-		int channels = 1;
-		boolean signed = true;
-		boolean bigEndian = true;
-
-		return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
+		return AudioFormatUtil.getAudioFormat();
 	}
 
 	/**

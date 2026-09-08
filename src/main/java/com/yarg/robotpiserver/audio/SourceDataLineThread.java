@@ -130,9 +130,16 @@ public class SourceDataLineThread implements Runnable {
 				}
 			}
 
-			// If still null, we didn't get a line. Bail.
+			// Named mixer not found — fall back to system default.
 			if (sourceDataLine == null) {
-				return;
+				try {
+					sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+					sourceDataLine.open(AudioFormatUtil.getAudioFormat());
+					System.out.println("SourceDataLine using system default mixer.");
+				} catch (LineUnavailableException e) {
+					e.printStackTrace();
+					return;
+				}
 			}
 
 			sourceDataLine.start();
@@ -209,6 +216,7 @@ public class SourceDataLineThread implements Runnable {
 
 		try {
 			serverDatagramSocket.receive(datagramPacket);
+			System.out.println("Initial audio packet received! Starting playback.");
 		} catch (IOException e) {
 			System.out.println(
 					"Exception occurred with initial incoming audio stream. See stack trace for more infomation.");

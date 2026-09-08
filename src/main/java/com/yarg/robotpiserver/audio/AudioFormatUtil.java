@@ -11,11 +11,11 @@ public class AudioFormatUtil {
      */
     public static AudioFormat getAudioFormat() {
 
-        float sampleRate = 44100.0f;
+        float sampleRate = 16000.0f;
         int sampleSizeInBits = 16;
         int channels = 1;
         boolean signed = true;
-        boolean bigEndian = true;
+        boolean bigEndian = false; // little-endian to match Android PCM_16BIT
 
         return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
     }
