@@ -1,51 +1,44 @@
 package com.yarg.robotpiserver.server.handler.impl;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import com.yarg.gen.models.ConnectErrorResponse;
 import com.yarg.gen.models.ConnectResponse;
 import com.yarg.robotpiserver.client.ClientConnection;
+import com.yarg.robotpiserver.server.controller.ControllerInterface;
 import com.yarg.robotpiserver.server.handler.HandlerBase;
 import com.yarg.robotpiserver.server.handler.HandlerResponse;
 import com.yarg.robotpiserver.server.handler.HandlerResponseCode;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 /**
- * Handle the connection request.
+ * Handle the connection request. Supports reconnection: if a client is already connected,
+ * the existing session is stopped before establishing the new connection.
  */
 public class ConnectHandler extends HandlerBase<ConnectResponse> {
 
-    private Gson gson = new Gson();
+    private final ControllerInterface controller;
 
-    public ConnectHandler() {
-        // TODO: support constructor injection for starting robot
+    public ConnectHandler(ControllerInterface controller) {
+        Objects.requireNonNull(controller, "controller MUST NOT be null.");
+        this.controller = controller;
     }
 
     @Override
     public HandlerResponse<ConnectResponse> handleRequest(HttpExchange exchange) {
 
-        ConnectResponse response;
-        HandlerResponseCode responseCode;
-
         if (ClientConnection.getInstance().hasConnection()) {
-            response = new ConnectErrorResponse().errorCode(1000);
-            response.setMessage("A client connection already exists.");
-            responseCode = HandlerResponseCode.INTERNAL_SERVER_ERROR;
-        } else {
-            InetSocketAddress remoteAddress = exchange.getRemoteAddress();
-            ClientConnection.getInstance().connectClient(remoteAddress);
-
-            response = new ConnectResponse();
-            response.setMessage("Connection established.");
-            responseCode = HandlerResponseCode.SUCCESS;
-
-            // TODO: Start connections back to client.
-            InetAddress inetAddress = remoteAddress.getAddress();
-            inetAddress.getHostAddress();
+            controller.stopController();
+            ClientConnection.getInstance().disconnectClient();
         }
 
-        return new HandlerResponse<ConnectResponse>(responseCode, response);
+        InetSocketAddress remoteAddress = exchange.getRemoteAddress();
+        ClientConnection.getInstance().connectClient(remoteAddress);
+        controller.startController(remoteAddress);
+
+        ConnectResponse response = new ConnectResponse();
+        response.setMessage("Connection established.");
+
+        return new HandlerResponse<ConnectResponse>(HandlerResponseCode.SUCCESS, response);
     }
 }

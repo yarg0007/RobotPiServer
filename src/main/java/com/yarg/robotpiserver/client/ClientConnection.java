@@ -3,7 +3,7 @@ package com.yarg.robotpiserver.client;
 import java.net.InetSocketAddress;
 
 /**
- * Singleton for tracking the state of the client conneciton.
+ * Singleton for tracking the state of the client connection.
  */
 public class ClientConnection {
 
@@ -26,14 +26,14 @@ public class ClientConnection {
      * Check if there is already a connection with the client.
      * @return True if a client connection already exists, false otherwise.
      */
-    public boolean hasConnection() {
+    public synchronized boolean hasConnection() {
         return (clientAddress != null);
     }
 
     /**
      * Disconnect the client.
      */
-    public void disconnectClient() {
+    public synchronized void disconnectClient() {
         clientAddress = null;
     }
 
@@ -41,7 +41,7 @@ public class ClientConnection {
      * Connect to a new client.
      * @param clientAddress Client's InetSocketAddress.
      */
-    public void connectClient(InetSocketAddress clientAddress) {
+    public synchronized void connectClient(InetSocketAddress clientAddress) {
         this.clientAddress = clientAddress;
     }
 
@@ -49,7 +49,7 @@ public class ClientConnection {
      * Get the IP address of the client connection.
      * @return Client connection IP address.
      */
-    public String getClientIpAddress() {
-        return clientAddress.getAddress().toString();
+    public synchronized String getClientIpAddress() {
+        return clientAddress.getAddress().getHostAddress();
     }
 }

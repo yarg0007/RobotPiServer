@@ -1,34 +1,67 @@
 package com.yarg.robotpiserver.server.controller;
 
+import com.yarg.gen.models.ConfigurationModel;
+import com.yarg.gen.models.ConfigurationModelAudioStreamServer;
 import com.yarg.robotpiserver.audio.AudioStreamServer;
+import com.yarg.robotpiserver.audio.TargetDataLineException;
 import com.yarg.robotpiserver.config.Configuration;
+import com.yarg.robotpiserver.control.InputControlServer;
 import com.yarg.robotpiserver.util.Generated;
 import com.yarg.robotpiserver.video.VideoStream;
 
 import java.net.InetSocketAddress;
 
+/**
+ * Coordinates starting and stopping all robot subsystems (video, audio, input control)
+ * in response to client connection lifecycle events.
+ *
+ * Excluded from JaCoCo coverage because all methods instantiate and coordinate hardware.
+ */
 @Generated
 public class ControllerImpl implements ControllerInterface {
 
-    private InetSocketAddress clientSocketAddress;
     private VideoStream videoStream;
     private AudioStreamServer audioStreamServer;
+    private InputControlServer inputControlServer;
+
+    /** Production constructor. */
+    public ControllerImpl() {
+    }
+
+    /** Test constructor. Allows injecting pre-built subsystems for unit testing. */
+    public ControllerImpl(AudioStreamServer audioStreamServer, InputControlServer inputControlServer) {
+        this.audioStreamServer = audioStreamServer;
+        this.inputControlServer = inputControlServer;
+    }
 
     @Override
-    public void startController(InetSocketAddress clientSocketAddress) {
-        this.clientSocketAddress = clientSocketAddress;
-        String clientIpAddress = this.clientSocketAddress.getAddress().getHostAddress();
+    public void startController(InetSocketAddress clientAddress) {
 
-        int videoStreamPort = Configuration.getInstance().getConfigurationModel().getVideoStreamPort();
-        videoStream = new VideoStream(clientIpAddress, videoStreamPort, Runtime.getRuntime());
+        String clientIp = clientAddress.getAddress().getHostAddress();
+        ConfigurationModel cfg = Configuration.getInstance().getConfigurationModel();
+
+        int videoStreamPort = cfg.getVideoStreamPort();
+        videoStream = new VideoStream(clientIp, videoStreamPort, Runtime.getRuntime());
         videoStream.startVideoStream();
 
-        int audioReceivePort = Configuration.getInstance().getConfigurationModel().getAudioStreamServer().getReceivePort();
-        int audioSendPort = Configuration.getInstance().getConfigurationModel().getAudioStreamServer().getSendPort();
-//        audioStreamServer = new AudioStreamServer(clientIpAddress, audioReceivePort, audioSendPort);
-//        audioStreamServer.startAudioStream();
+        ConfigurationModelAudioStreamServer audioConfig = cfg.getAudioStreamServer();
+        if (audioConfig != null) {
+            try {
+                audioStreamServer = new AudioStreamServer(clientIp, audioConfig);
+            } catch (TargetDataLineException e) {
+                System.out.println("Failed to initialize audio stream: " + e.getMessage());
+                e.printStackTrace();
+                audioStreamServer = null;
+            }
+        }
 
-        // TODO: start input control
+        inputControlServer = new InputControlServer();
+        inputControlServer.startInputControlServer();
+
+        if (audioStreamServer != null) {
+            audioStreamServer.addAudioLevelListener(inputControlServer);
+            audioStreamServer.startAudioStream();
+        }
     }
 
     @Override
@@ -36,12 +69,17 @@ public class ControllerImpl implements ControllerInterface {
 
         if (videoStream != null && videoStream.isVideoStreamRunning()) {
             videoStream.stopVideoStream();
+            videoStream = null;
         }
 
         if (audioStreamServer != null) {
             audioStreamServer.stopAudioStream();
+            audioStreamServer = null;
         }
-        // TODO: stop audio
-        // TODO: stop input control
+
+        if (inputControlServer != null) {
+            inputControlServer.stopInputControlServer();
+            inputControlServer = null;
+        }
     }
 }

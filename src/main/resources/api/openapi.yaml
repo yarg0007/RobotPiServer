@@ -76,3 +76,55 @@ components:
       properties:
         message:
           type: string
+    ConfigurationModel:
+      type: object
+      description: >-
+        Server configuration file model. A file 'config.json' MUST reside in the same folder as the service jar.
+      required:
+        - serverPort
+        - serverBackLogging
+      properties:
+        serverIpAddress:
+          type: string
+          description: The server's IP address to bind to. Null binds to all interfaces.
+          example: "localhost"
+        serverPort:
+          type: integer
+          format: int32
+          default: 8001
+          example: 8001
+        serverBackLogging:
+          type: integer
+          format: int32
+          default: 0
+          example: 0
+        inputControlServerPort:
+          type: integer
+          format: int32
+          default: 49801
+          example: 49801
+        audioStreamServer:
+          $ref: '#/components/schemas/ConfigurationModelAudioStreamServer'
+        videoStreamPort:
+          type: integer
+          format: int32
+          default: 5000
+          example: 5000
+    ConfigurationModelAudioStreamServer:
+      type: object
+      properties:
+        receivePort:
+          type: integer
+          format: int32
+          default: 49809
+          example: 49809
+        sendPort:
+          type: integer
+          format: int32
+          default: 49808
+          example: 49808
+        microphoneMixerName:
+          type: string
+          default: "Set [plughw:1,0]"
+          description: Name of the ALSA audio mixer to use for microphone capture.
+          example: "Set [plughw:1,0]"

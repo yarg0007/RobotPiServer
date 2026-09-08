@@ -197,6 +197,10 @@ public class SourceDataLineThread implements Runnable {
 	@Override
 	public void run() {
 
+		if (sourceDataLine == null) {
+			return;
+		}
+
 		int dataLen = getAudioBufferSizeBytes();
 		byte[] datagramBuffer = new byte[dataLen];
 		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, dataLen);
@@ -276,6 +280,9 @@ public class SourceDataLineThread implements Runnable {
 	 */
 	protected int getAudioBufferSizeBytes() {
 
+		if (sourceDataLine == null) {
+			return 1024;
+		}
 		int frameSizeInBytes = AudioFormatUtil.getAudioFormat().getFrameSize();
 		int bufferLengthInFrames = sourceDataLine.getBufferSize() / 8;
 		int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;

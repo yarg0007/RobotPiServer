@@ -82,6 +82,11 @@ components:
               example: 49808
               maximum: 65535
               minimum: 0
+            microphoneMixerName:
+              type: string
+              default: "Set [plughw:1,0]"
+              description: Name of the ALSA audio mixer to use for microphone capture. Run 'aplay -L' on the Raspberry Pi to find the correct value.
+              example: "Set [plughw:1,0]"
         videoStreamPort:
           type: integer
           format: int32

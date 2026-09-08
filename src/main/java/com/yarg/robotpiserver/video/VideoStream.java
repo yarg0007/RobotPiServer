@@ -49,8 +49,9 @@ public class VideoStream {
 		stopVideoStream();
 
 		String videoCommand = String.format(
-				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 10 -hf -b 2000000 -o - | gst-launch-1.0 -v fdsrc ! h264parse ! rtph264pay config-interval=1 pt=96 ! gdppay ! udpsink host=%s port=%d",
-				address, port);
+				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -o - | " +
+				"/usr/bin/cvlc -vvv stream:///dev/stdin --sout '#rtp{sdp=rtsp://:%d/}' :demux=h264",
+				port);
 
 		try {
 			String[] cmd = { "/bin/sh", "-c", videoCommand };
@@ -67,6 +68,7 @@ public class VideoStream {
 	public void stopVideoStream() {
 		if (isVideoStreamRunning()) {
 			videoStreamProcess.destroy();
+			videoStreamProcess = null;
 		}
 	}
 }
