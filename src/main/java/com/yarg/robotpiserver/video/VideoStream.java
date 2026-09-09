@@ -55,15 +55,13 @@ public class VideoStream {
 
 		stopVideoStream();
 
-		// -ih embeds SPS/PPS headers at every IDR frame so reconnecting clients
-		// can sync immediately without "damaged access unit" errors.
-		// -g 15 sets a 1-second GOP at 15 fps; smaller GOPs allow faster seek/sync.
-		// VLC: -q suppresses verbose logging (saves significant CPU on ARMv6).
-		// --sout-rtp-caching=0 and --no-sout-rtp-synchronisation minimize transmission delay.
+		// Raw H264 piped directly to netcat: Android receives via TCP and decodes with
+		// MediaCodec hardware decoder. This eliminates the RTSP/VLC jitter buffer that
+		// caused multi-second lag. Android connects to this port after the process starts.
+		// -ih embeds SPS/PPS at every IDR so the decoder can sync on first keyframe.
+		// -b 1500000 keeps bandwidth manageable on the slow ARMv6.
 		String videoCommand = String.format(
-				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -ih -g 15 -o - | " +
-				"/usr/bin/cvlc -q stream:///dev/stdin --sout '#rtp{sdp=rtsp://:%d/}' :demux=h264" +
-				" --sout-rtp-caching=0 --no-sout-rtp-synchronisation",
+				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 1500000 -ih -o - | nc -l %d",
 				port);
 
 		try {
@@ -83,5 +81,12 @@ public class VideoStream {
 			videoStreamProcess.destroy();
 			videoStreamProcess = null;
 		}
+		// Kill any orphaned raspivid/nc child processes from the previous pipeline.
+		// /bin/sh -c "cmd | nc" does not forward SIGTERM to children so they linger,
+		// and the next nc -l call fails to bind if nc is still holding the port.
+		try {
+			runtime.exec(new String[]{"/bin/sh", "-c", "pkill -x raspivid 2>/dev/null; pkill -f 'nc -l' 2>/dev/null"});
+			Thread.sleep(300);
+		} catch (Exception ignored) {}
 	}
 }
