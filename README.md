@@ -17,14 +17,14 @@ Example robot running this code: BruceBot1000 — https://www.youtube.com/watch?
 
 ### Prerequisites
 
-On your Raspberry Pi, install:
+| Requirement | Notes |
+|---|---|
+| Java | **ARMv6 (Pi 1/Zero):** use pre-installed `/usr/bin/java` (Java 7 only — Java 8+ hangs on ARMv6). **ARMv7+ (Pi 2 and newer):** `sudo apt-get install -y default-jre` |
+| Camera | `sudo raspi-config` → Interface Options → Camera |
+| VLC | `sudo apt-get install -y vlc` |
+| USB audio *(optional)* | Plug in device; disable hardware mic monitoring (see below) |
 
-| Requirement | Install Command | Verify |
-|---|---|---|
-| Java 11+ | `sudo apt-get install -y default-jre` | `java -version` |
-| Camera enabled | `sudo raspi-config` → Interface Options → Camera | `/usr/bin/raspivid --version` |
-| VLC (for RTSP) | `sudo apt-get install -y vlc` | `cvlc --version` |
-| USB audio *(optional)* | plug in device, check `aplay -l` | `speaker-test -c2` |
+> **Recommended:** use `scripts/setup-pi.sh` to handle all of the above automatically.
 
 ### Build
 
@@ -43,14 +43,14 @@ Create `config.json` in the same directory as the JAR:
 ```json
 {
   "serverPort": 8001,
-  "serverBackLogging": 1,
+  "serverBackLogging": 10,
   "inputControlServerPort": 49801,
   "audioStreamServer": {
     "receivePort": 49809,
     "sendPort": 49808,
-    "microphoneMixerName": "Set [plughw:2,0]"
+    "microphoneMixerName": "Set [plughw:1,0]"
   },
-  "videoStreamPort": 8554
+  "videoStreamPort": 5000
 }
 ```
 
@@ -62,26 +62,32 @@ Create `config.json` in the same directory as the JAR:
 | `audioStreamServer.receivePort` | UDP port the server listens on for audio from the controller |
 | `audioStreamServer.sendPort` | UDP port the server sends microphone audio to the controller |
 | `audioStreamServer.microphoneMixerName` | ALSA mixer name for the USB audio device. Run `aplay -l` on the Pi to find the card number, then format as `"Set [plughw:X,0]"`. Audio is optional — the server degrades gracefully if the mixer is not found. |
-| `videoStreamPort` | RTSP port for the H.264 video stream (default 8554) |
+| `videoStreamPort` | RTSP port for the H.264 video stream (default 5000) |
 
 ### Deploy to Pi
 
+**First-time setup** — run this once to install the systemd service:
+
 ```bash
 # Build
-mvn package -DskipTests
+mvn package -Dmaven.test.skip=true
 
-# Copy to Pi (replace <pi-ip> with your Pi's IP address)
+# Copy everything to Pi (replace <pi-ip> with your Pi's IP address)
 scp target/RobotPiServer-0.0.1-SNAPSHOT-jar-with-dependencies.jar pi@<pi-ip>:~/
 scp config.json pi@<pi-ip>:~/
+scp scripts/setup-pi.sh pi@<pi-ip>:~/
+scp scripts/robotpiserver.service pi@<pi-ip>:~/
 
-# Start server (runs in background, survives SSH logout)
-ssh pi@<pi-ip> "nohup sudo java -jar ~/RobotPiServer-0.0.1-SNAPSHOT-jar-with-dependencies.jar > /tmp/robotpi.log 2>&1 &"
+# Run the setup script on the Pi
+ssh pi@<pi-ip> "bash ~/setup-pi.sh"
+```
 
-# Check it started
-ssh pi@<pi-ip> "cat /tmp/robotpi.log"
+**Subsequent deploys** — after the service is installed, just copy the new JAR and restart:
 
-# Stop server
-ssh pi@<pi-ip> "sudo pkill -f 'java -jar'"
+```bash
+mvn package -Dmaven.test.skip=true
+scp target/RobotPiServer-0.0.1-SNAPSHOT-jar-with-dependencies.jar pi@<pi-ip>:~/
+ssh pi@<pi-ip> "sudo systemctl restart robotpiserver"
 ```
 
 ### Auto-start on Boot
@@ -145,14 +151,16 @@ When `/connect` is called, the server launches this pipeline:
 ```bash
 /usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -o - \
   | /usr/bin/cvlc -vvv stream:///dev/stdin \
-      --sout '#rtp{sdp=rtsp://:8554/}' :demux=h264
+      --sout '#rtp{sdp=rtsp://:5000/}' :demux=h264
 ```
 
 This creates an RTSP server on the Pi. The Android controller connects to:
 
 ```
-rtsp://<pi-ip>:8554/
+rtsp://<pi-ip>:5000/
 ```
+
+The port is configured by `videoStreamPort` in `config.json`.
 
 The stream is started on `/connect` and stopped on `/disconnect`.
 
@@ -168,8 +176,9 @@ The stream is started on `/connect` and stopped on `/disconnect`.
 **Video not appearing in the app:**
 - Verify the camera is enabled: `vcgencmd get_camera` should show `supported=1 detected=1`
 - Verify VLC is installed: `cvlc --version`
-- Test the pipeline manually: `timeout 5 raspivid -n -t 0 -o - | cvlc stream:///dev/stdin --sout '#rtp{sdp=rtsp://:8554/}' :demux=h264`
-- Check that port 8554 is not blocked by a firewall
+- Test the pipeline manually: `timeout 5 raspivid -n -t 0 -o - | cvlc stream:///dev/stdin --sout '#rtp{sdp=rtsp://:5000/}' :demux=h264`
+- Check that `videoStreamPort` in `config.json` matches the port set in the Android app's Config screen (default: 5000)
+- Check that the port is not blocked by a firewall
 
 **Audio not working:**
 - Run `aplay -l` to find the USB audio card number

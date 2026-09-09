@@ -4,6 +4,25 @@ Step-by-step instructions for configuring a Raspberry Pi to run Robot Pi Server.
 
 ---
 
+## Quick Setup (Recommended)
+
+After copying the JAR and `config.json` to the Pi, run the setup script from the `scripts/` directory:
+
+```bash
+# From your development machine, copy the script to the Pi
+scp scripts/setup-pi.sh pi@<pi-ip>:~/
+scp scripts/robotpiserver.service pi@<pi-ip>:~/
+
+# Run it on the Pi
+ssh pi@<pi-ip> "bash ~/setup-pi.sh"
+```
+
+The script handles Java validation, VLC installation, USB audio ALSA configuration, and systemd service installation automatically, with architecture detection for Pi 1 / Zero (ARMv6) vs. Pi 2+ (ARMv7+).
+
+Continue reading below for manual steps or to understand what the script does.
+
+---
+
 ## 1. OS Installation
 
 Install Raspbian (Raspberry Pi OS) — Bullseye or later recommended. Choose the 32-bit Lite image (no desktop needed). During setup with Raspberry Pi Imager:
@@ -23,16 +42,28 @@ sudo reboot
 
 ## 2. Java Runtime
 
-Install the default JRE (Java 11+):
+The required Java version depends on the Pi's CPU architecture:
+
+| Pi Model | Architecture | Java Requirement |
+|---|---|---|
+| Pi 1, Pi Zero (original) | ARMv6 (`armv6l`) | Java 7 **only** — pre-installed by Raspbian |
+| Pi 2, 3, 4, 5, Zero 2 W | ARMv7 / aarch64 | Java 11+ — install with `apt-get` |
+
+**ARMv6 (Pi 1 / Pi Zero):**
+
+Java 7 (`/usr/bin/java`) is pre-installed by Raspbian and is the only version that works. Java 8 and later require ARMv7+ instructions and will hang or crash silently on ARMv6. **Do not install a newer JRE on these boards.**
+
+```bash
+/usr/bin/java -version
+# Expected: java version "1.7.0_72" (or similar 1.7.x)
+```
+
+**ARMv7+ / aarch64 (Pi 2 and newer):**
 
 ```bash
 sudo apt-get install -y default-jre
 java -version
-```
-
-Expected output:
-```
-openjdk version "11.0.x" ...
+# Expected: openjdk version "11.0.x" ...
 ```
 
 ---
@@ -75,7 +106,7 @@ Verify the full pipeline works (runs for 5 seconds, then exits):
 ```bash
 timeout 5 /usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -o - 2>/dev/null \
   | /usr/bin/cvlc -vvv stream:///dev/stdin \
-      --sout '#rtp{sdp=rtsp://:8554/}' :demux=h264 2>&1 | head -10
+      --sout '#rtp{sdp=rtsp://:5000/}' :demux=h264 2>&1 | head -10
 echo "Pipeline test done"
 ```
 
@@ -94,26 +125,45 @@ lsusb      # should list your USB audio adapter
 aplay -l   # lists playback devices — note the card number
 ```
 
-Example `aplay -l` output showing card 2:
+Example `aplay -l` output showing the device on card 1:
 ```
-card 2: Set [C-Media USB Headphone Set], device 0: USB Audio [USB Audio]
+card 1: Set [C-Media USB Headphone Set], device 0: USB Audio [USB Audio]
   Subdevices: 1/1
   Subdevice #0: subdevice #0
 ```
 
-**Update `config.json`** with the correct mixer name (format: `"Set [plughw:X,0]"` where X is the card number):
+**Update `config.json`** with the correct mixer name (format: `"Set [plughw:X,0]"` where X is the card number from `aplay -l`):
 ```json
-"microphoneMixerName": "Set [plughw:2,0]"
+"microphoneMixerName": "Set [plughw:1,0]"
+```
+
+**Disable hardware microphone monitoring (required):**
+
+C-Media USB adapters enable hardware monitoring by default, which routes the microphone directly to the speaker output at the hardware level. This causes the Pi microphone to play through the Pi speaker regardless of any software routing, creating an audio loop. Disable it:
+
+```bash
+# Replace 1 with your card number from aplay -l
+amixer -c 1 set Mic playback 0%
+amixer -c 1 set Mic playback off
+amixer -c 1 set 'Auto Gain Control' off
+sudo alsactl store   # persist settings across reboots
+```
+
+Verify it is off:
+```bash
+amixer -c 1 scontents
+# Mic line should show: Playback 0 [0%] [-99999.99dB] [off]
 ```
 
 **Test speaker output:**
 ```bash
-speaker-test -c2 -t sine -f 500
+speaker-test -c1 -t sine -f 500
 ```
 
 **Test microphone recording:**
 ```bash
-arecord -D plughw:2,0 -f cd -d 3 /tmp/test.wav && aplay /tmp/test.wav
+# Replace 1 with your card number
+arecord -D plughw:1,0 -f cd -d 3 /tmp/test.wav && aplay /tmp/test.wav
 ```
 
 Audio issues will not prevent connect/disconnect from working — audio streams degrade gracefully if the mixer isn't found.

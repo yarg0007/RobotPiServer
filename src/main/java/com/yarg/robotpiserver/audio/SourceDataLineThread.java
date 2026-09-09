@@ -208,9 +208,8 @@ public class SourceDataLineThread implements Runnable {
 			return;
 		}
 
-		int dataLen = getAudioBufferSizeBytes();
-		byte[] datagramBuffer = new byte[dataLen];
-		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, dataLen);
+		byte[] datagramBuffer = new byte[4096];
+		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, datagramBuffer.length);
 
 		System.out.println("Waiting for initial packet");
 
@@ -261,13 +260,12 @@ public class SourceDataLineThread implements Runnable {
 	protected void sendAudioToSpeaker(DatagramPacket datagramPacket) {
 
 		byte[] rawData = datagramPacket.getData();
+		int receivedLen = datagramPacket.getLength();
 		int maxSample = 0;
-		for (int t = 0; t < rawData.length; t += 2) {
-			int low = rawData[t];
-			t++;
-			int high = rawData[t + 1];
-			t++;
-			int sample = (high << 8) + (low & 0x00ff);
+		for (int t = 0; t < receivedLen - 1; t += 2) {
+			int low = rawData[t] & 0xFF;
+			int high = rawData[t + 1] & 0xFF;
+			int sample = (high << 8) | low;
 			if (sample > maxSample) {
 				maxSample = sample;
 			}
@@ -277,7 +275,11 @@ public class SourceDataLineThread implements Runnable {
 			listener.audioLevelUpdate(300, maxSample);
 		}
 
-		sourceDataLine.write(datagramPacket.getData(), 0, datagramPacket.getLength());
+		int frameSize = sourceDataLine.getFormat().getFrameSize();
+		int len = (datagramPacket.getLength() / frameSize) * frameSize;
+		if (len > 0) {
+			sourceDataLine.write(datagramPacket.getData(), 0, len);
+		}
 	}
 
 
