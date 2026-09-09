@@ -19,41 +19,40 @@ package com.yarg.robotpiserver.audio;
  * under the License.
  */
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.Mixer.Info;
-import javax.sound.sampled.TargetDataLine;
-
 import com.yarg.robotpiserver.util.Generated;
 
+import javax.sound.sampled.*;
+import javax.sound.sampled.Mixer.Info;
+import java.io.IOException;
+import java.net.*;
+
+/**
+ * Takes microphone input and sends the audio as a stream to the client.
+ */
 public class TargetDataLineThread implements Runnable {
 
-	private String AUDIO_MIXER_NAME = "Set [plughw:1,0]";
+	private static final String CLIENT_IP_ERROR_MESSAGE = "Unrecoverable error occurred extracting the IP address of the client during startup of audio stream. See stack trace for more information.";
+
+	/** Name of the audio mixer to use. */
+	private final String AUDIO_MIXER_NAME;  // For Raspberry PI, we expect this to be = "Set [plughw:1,0]";
 
 	/** The datagram client. Setup to only allow a single client connection. */
 	private DatagramSocket clientDatagramSocket = null;
 
 	/** Flag execution state of thread. */
 	private boolean running;
+
+	/** Thread executing this runnable. */
 	private Thread executionThread;
 
 	/** This is the mic audio input. */
 	private TargetDataLine targetDataLine;
 
 	/** Port to send datagrams over. */
-	private int serverPort;
+	private int port;
 
-	/** Interface for accessing server address to send datagrams to. */
-	private DatagramClientReturnAddress serverAddress;
+	/** IP address to send datagrams to. */
+	private InetAddress address;
 
 	/** Wrapper around AudioSystem static methods. */
 	private MixerWrapper mixerWrapper;
@@ -68,55 +67,80 @@ public class TargetDataLineThread implements Runnable {
 	 * Create a new target data line thread that sends the microphone data over
 	 * the network to the designated address and port.
 	 *
-	 * @param serverAddress
-	 *            Return address interface for retrieving the address of the
-	 *            client to send audio to.
-	 * @param serverPort
-	 *            Server port to send audio data to.
+	 * @param nameOfMicrophoneMixer Name of the microphone mixer to use.
+	 * @param clientIpAddressOrHostName IP address or host name of the client to send microphone audio to.
+	 * @param port Port to send audio data to.
 	 */
 	@Generated // Ignore Jacoco
-	public TargetDataLineThread(DatagramClientReturnAddress serverAddress, int serverPort) {
-		this.serverAddress = serverAddress;
-		this.serverPort = serverPort;
+	public TargetDataLineThread(String nameOfMicrophoneMixer, String clientIpAddressOrHostName, int port) throws TargetDataLineException {
+		AUDIO_MIXER_NAME = nameOfMicrophoneMixer;
+		extractClientIpAddress(clientIpAddressOrHostName);
+		this.port = port;
 		this.mixerWrapper = new MixerWrapper();
+		initialize();
 	}
 
 	/**
-	 * Create a new target data line thread that sends the microphone data over
-	 * the network to the designated address and port. TargetDataLine may also
-	 * be specified.
+	 * Start the microphone stream. This MUST be called to begin capturing and sending the microphone audio.
+	 */
+	@Generated // Skip jacoco
+	public void startAudioStreamMicrophone() {
+
+		running = true;
+		executionThread = new Thread(this);
+		executionThread.start();
+	}
+
+	/**
+	 * Stop the microphone stream and release resources.
+	 */
+	public void stopAudioStreamMicrophone() {
+
+		running = false;
+		if (executionThread != null) {
+			executionThread.interrupt();
+		}
+
+		if (targetDataLine != null) {
+			targetDataLine.flush();
+			targetDataLine.close();
+			targetDataLine = null;
+		}
+
+		if (clientDatagramSocket != null) {
+			clientDatagramSocket.close();
+			clientDatagramSocket = null;
+		}
+
+		System.out.println("StopAudioStreamMicrophone complete.");
+	}
+
+	/*
+	 * (non-Javadoc)
 	 *
-	 * @param clientDatagramSocket
-	 * 			  Datagram socket for sending data.
-	 * @param serverAddress
-	 *            Return address interface for retrieving the address of the
-	 *            client to send audio to.
-	 * @param serverPort
-	 *            Server port to send audio data to.
-	 * @param targetDataLine
-	 *            Incoming audio line.
-	 * @param mixerWrapper
-	 * 			  MixerWrapper instance to use.
-	 * @param readBuffer
-	 * 			  Read audio data.
+	 * @see java.lang.Thread#run()
 	 */
 	@Generated // Ignore Jacoco
-	public TargetDataLineThread(DatagramSocket clientDatagramSocket,  DatagramClientReturnAddress serverAddress, int serverPort,
-			TargetDataLine targetDataLine, MixerWrapper mixerWrapper, byte[] readBuffer) {
+	@Override
+	public void run() {
 
-		this.clientDatagramSocket = clientDatagramSocket;
-		this.serverAddress = serverAddress;
-		this.serverPort = serverPort;
-		this.targetDataLine = targetDataLine;
-		this.mixerWrapper = mixerWrapper;
-		this.readBuffer = readBuffer;
+		initializeThread();
+
+		while (running) {
+
+			sendAudioData();
+		}
 	}
+
+	// -------------------------------------------------------------------------
+	// Protected methods
+	// -------------------------------------------------------------------------
 
 	/**
 	 * Initialize the instance. Setup Datagram client to connect and then do all
 	 * the setup magic. Must be called after getting class instance.
 	 */
-	public void initialize() {
+	protected void initialize() {
 
 		if (running) {
 			running = false;
@@ -191,85 +215,13 @@ public class TargetDataLineThread implements Runnable {
 		}
 	}
 
-	@Generated // Skip jacoco
-	public void startAudioStreamMicrophone() {
-
-		running = true;
-		executionThread = new Thread(this);
-		executionThread.start();
-	}
-
-	public void stopAudioStreamMicrophone() {
-
-		running = false;
-		if (executionThread != null) {
-			executionThread.interrupt();
-		}
-
-		if (targetDataLine != null) {
-			targetDataLine.flush();
-			targetDataLine.close();
-			targetDataLine = null;
-		}
-
-		if (clientDatagramSocket != null) {
-			clientDatagramSocket.close();
-			clientDatagramSocket = null;
-		}
-
-		System.out.println("StopAudioStreamMicrophone complete.");
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see java.lang.Thread#run()
-	 */
-	@Generated // Ignore Jacoco
-	@Override
-	public void run() {
-
-		initializeThread();
-
-		while (running) {
-
-			sendAudioData();
-		}
-	}
-
-	// -------------------------------------------------------------------------
-	// Protected methods
-	// -------------------------------------------------------------------------
-
 	/**
 	 * Initialize the thread in preparation for sending audio data to the client.
 	 */
 	protected void initializeThread() {
 
 		readBuffer = new byte[getAudioBufferSizeBytes()];
-
-		// Sleep for three seconds and then check if the address to send
-		// audio to has been set. Do not proceed until this is set.
-		while (serverAddress.getAddress() == null) {
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-
-		InetAddress address;
-
-		try {
-			address = InetAddress.getByName(serverAddress.getAddress());
-		} catch (UnknownHostException e) {
-			System.out.println(
-					"Unreoverable error occurred during startup of audio stream. See stack trace for more information.");
-			e.printStackTrace();
-			return;
-		}
-
-		packet = new DatagramPacket(readBuffer, readBuffer.length, address, serverPort);
+		packet = new DatagramPacket(readBuffer, readBuffer.length, address, port);
 	}
 
 	/**
@@ -307,14 +259,7 @@ public class TargetDataLineThread implements Runnable {
 	 * @return Audio format to use for recording.
 	 */
 	protected AudioFormat getAudioFormat() {
-
-		float sampleRate = 44100.0f;
-		int sampleSizeInBits = 16;
-		int channels = 1;
-		boolean signed = true;
-		boolean bigEndian = true;
-
-		return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed, bigEndian);
+		return AudioFormatUtil.getAudioFormat();
 	}
 
 	/**
@@ -323,10 +268,25 @@ public class TargetDataLineThread implements Runnable {
 	 * @return Size of buffer
 	 */
 	protected int getAudioBufferSizeBytes() {
+		return 4096;
+	}
 
-		int frameSizeInBytes = getAudioFormat().getFrameSize();
-		int bufferLengthInFrames = targetDataLine.getBufferSize() / 8;
-		int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
-		return bufferLengthInBytes;
+	// -------------------------------------------------------------------------
+	// Private methods
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Extract the client IP address from the provided string. Both host names and IP addresses will work, if valid.
+	 * @param ipAddress IP address, or host name, to use for communicating with the client.
+	 * @throws TargetDataLineException If there was an error extracting the IP address from the value provided.
+	 */
+	private void extractClientIpAddress(String ipAddress) throws TargetDataLineException {
+		try {
+			this.address = InetAddress.getByName(ipAddress);
+		} catch (UnknownHostException e) {
+			System.out.println(CLIENT_IP_ERROR_MESSAGE);
+			e.printStackTrace();
+			throw new TargetDataLineException(CLIENT_IP_ERROR_MESSAGE, e);
+		}
 	}
 }

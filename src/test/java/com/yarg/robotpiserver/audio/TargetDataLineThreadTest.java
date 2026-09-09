@@ -1,161 +1,142 @@
 package com.yarg.robotpiserver.audio;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioFormat.Encoding;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.Mixer.Info;
-import javax.sound.sampled.TargetDataLine;
-
-import org.mockito.Mockito;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.sound.sampled.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.util.*;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+
 public class TargetDataLineThreadTest {
 
+	private static final Map<String, String> osToMicrophoneMixerMap = new HashMap<String, String>() {{
+		put("Mac OS X", "MacBook Pro Microphone");
+	}};
+
+	private static final Map<String, String> osToSpeakerMixerMap = new HashMap<String, String>() {{
+		put("Mac OS X", "MacBook Pro Speakers");
+	}};
+
+	private String microphoneMixerName;
+	private String speakerMixerName;
+	private static final String LOCALHOST = "127.0.0.1";
+	private static final int PORT = 9090;
 	private TargetDataLineThread targetDataLineThread;
-	private DatagramClientReturnAddress serverAddress;
-	private int serverPort;
-	private TargetDataLine targetDataLine;
-	private MixerWrapper mixerWrapper;
-	private byte[] readBuffer;
-	private DatagramSocket clientDatagramSocket;
 
 	@BeforeMethod
-	public void resetMocks() {
-		serverAddress = mock(DatagramClientReturnAddress.class);
-		serverPort = 9999;
-		targetDataLine = mock(TargetDataLine.class);
-		mixerWrapper = mock(MixerWrapper.class);
-		clientDatagramSocket = mock(DatagramSocket.class);
+	public void setup() {
+
+		// Capture the OS specific speaker and microphone
+		String os = System.getProperty("os.name");
+		speakerMixerName = osToSpeakerMixerMap.get(os);
+		microphoneMixerName = osToMicrophoneMixerMap.get(os);
+		if (speakerMixerName == null || microphoneMixerName == null) {
+			throw new NullPointerException("Unable to capture speaker and/or microphone");
+		}
+	}
+
+	@AfterMethod
+	public void teardown() {
+		if (targetDataLineThread != null) {
+			targetDataLineThread.stopAudioStreamMicrophone();
+		}
 	}
 
 	@Test
-	public void getAudioFormat() {
-		targetDataLineThread = new TargetDataLineThread(null, null, serverPort, null, null, null);
-		AudioFormat audioFormat = targetDataLineThread.getAudioFormat();
-		assertEquals(audioFormat.getChannels(), 1, "Audio format channel does not match expected.");
-		assertEquals(audioFormat.getSampleRate(), 44100.0f, "Sample rate does not match expected.");
-		assertEquals(audioFormat.getSampleSizeInBits(), 16, "Sample size, in bits, does not match expected.");
-		assertEquals(audioFormat.isBigEndian(), true, "Big endianness does not match expected");
-		assertEquals(audioFormat.getFrameSize(), 2, "Frame size does not match expected.");
-		assertEquals(audioFormat.getFrameRate(), 44100.0f, "Frame rate does not match expected.");
-		assertEquals(audioFormat.getEncoding(), Encoding.PCM_SIGNED, "Encoding does not match expected.");
+	public void checkMatchOfExpectedAudioMixerInfo() {
+		MixerWrapper mixerWrapper = new MixerWrapper();
+		Mixer.Info[] mixerInfo = mixerWrapper.getMixerInfo();
+		System.out.println("Mixers");
+		List<String> mixerNames = new ArrayList<>();
+		Arrays.stream(mixerInfo).forEach(info -> {
+			System.out.println("----------------------");
+			System.out.println("Name : " + info.getName());
+			System.out.println("Description : " + info.getDescription());
+			mixerNames.add(info.getName());
+		});
+		assertThat(mixerNames, hasItem(microphoneMixerName));
 	}
 
 	@Test
-	public void getAudioBufferSizeBytes() {
+	public void getMicrophoneStreamAndThenStop() throws Exception {
 
-		when(targetDataLine.getBufferSize()).thenReturn(1024);
-		targetDataLineThread = new TargetDataLineThread(null, null, serverPort, targetDataLine, null, null);
-		int actualSize = targetDataLineThread.getAudioBufferSizeBytes();
-		assertEquals(actualSize, 256, "Audio buffer size does not match expected.");
+		// Create the listener for the microphone stream.
+		DatagramSocket listener = new DatagramSocket(PORT);
+		byte[] receive = new byte[65534];
+		DatagramPacket receivedData = new DatagramPacket(receive, receive.length);
+
+		// Create the target data line thread and start audio streaming.
+		targetDataLineThread = new TargetDataLineThread(microphoneMixerName, LOCALHOST, PORT);
+		targetDataLineThread.startAudioStreamMicrophone();
+		System.out.println("Letting microphone thread run for a moment...");
+		Thread.sleep(500);
+		System.out.println("Stopping microphone thread.");
+
+		// Make sure microphone data was received.
+		listener.receive(receivedData);
+		boolean dataReceived = false;
+		for (int i = 0; i < receivedData.getLength(); i++) {
+			if (receivedData.getData()[i] != 0) {
+				dataReceived = true;
+				break;
+			}
+		}
+
+		Assert.assertTrue(dataReceived);
 	}
 
 	@Test
-	public void sendAudioDataEmptyAudioStream() throws IOException {
+	public void recordMicrophoneStreamAndPlaybackAudioToSpeaker() throws Exception {
 
-		readBuffer = new byte[] {};
-		when(targetDataLine.read(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt())).thenReturn(4);
-		targetDataLineThread = new TargetDataLineThread(clientDatagramSocket, null, serverPort, targetDataLine, null, readBuffer);
-		verify(clientDatagramSocket, never()).send(Mockito.any(DatagramPacket.class));
-	}
+		// Get the speaker line.
+		DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, AudioFormatUtil.getAudioFormat());
+		MixerWrapper mixerWrapper = new MixerWrapper();
+		Mixer.Info[] mixerInfo = mixerWrapper.getMixerInfo();
+		SourceDataLine sourceDataLine = null;
+		for (Mixer.Info info : mixerInfo) {
+			if (speakerMixerName.equals(info.getName())) {
+				Mixer mixer = mixerWrapper.getMixer(info);
+				sourceDataLine = (SourceDataLine) mixer.getLine(dataLineInfo);
+				sourceDataLine.open(AudioFormatUtil.getAudioFormat());
+				break;
+			}
+		}
 
-	@Test
-	public void sendAudioData() throws IOException {
+		if (sourceDataLine == null) {
+			throw new NullPointerException("Unable to obtain speaker output line");
+		}
 
-		when(serverAddress.getAddress()).thenReturn("localhost");
-		when(targetDataLine.read(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt())).thenReturn(4);
-		doNothing().when(clientDatagramSocket).send(Mockito.any(DatagramPacket.class));
-		targetDataLineThread = new TargetDataLineThread(clientDatagramSocket, serverAddress, serverPort, targetDataLine, mixerWrapper, null);
-		targetDataLineThread.initializeThread();
-		targetDataLineThread.sendAudioData();
-		verify(clientDatagramSocket, times(1)).send(Mockito.any(DatagramPacket.class));
-	}
+		sourceDataLine.start();
 
-	@Test
-	public void sendAudioDataWithoutPackets() throws IOException {
+		// Create the target data line thread and start audio streaming from the microphone.
+		targetDataLineThread = new TargetDataLineThread(microphoneMixerName, LOCALHOST, PORT);
+		targetDataLineThread.startAudioStreamMicrophone();
 
-		when(serverAddress.getAddress()).thenReturn("localhost");
-		when(targetDataLine.read(Mockito.any(byte[].class), Mockito.anyInt(), Mockito.anyInt())).thenReturn(0);
-		doNothing().when(clientDatagramSocket).send(Mockito.any(DatagramPacket.class));
-		targetDataLineThread = new TargetDataLineThread(clientDatagramSocket, serverAddress, serverPort, targetDataLine, mixerWrapper, null);
-		targetDataLineThread.initializeThread();
-		targetDataLineThread.sendAudioData();
-		verify(clientDatagramSocket, never()).send(Mockito.any(DatagramPacket.class));
-	}
+		// Capture microphone audio datagrams.
+		// Because this is not running on its own dedicated thread, there are large
+		// gaps in the audio stream. This is expected. Regardless, we are able to verify
+		// that audio streaming is working.
+		DatagramSocket audioCollectorSocket = new DatagramSocket(PORT);
+		byte[] receive = new byte[65534];
+		DatagramPacket receivedData = new DatagramPacket(receive, receive.length);
 
-	@Test
-	public void stopAudioStreamMicrophone() {
+		int count = 0;
+		int countLimit = 10;
+		while (count++ < countLimit) {
+			audioCollectorSocket.receive(receivedData);
+			sourceDataLine.write(receive, 0, receive.length);
+		}
 
-		doNothing().when(clientDatagramSocket).close();
-		doNothing().when(targetDataLine).flush();
-		doNothing().when(targetDataLine).close();
-		targetDataLineThread = new TargetDataLineThread(clientDatagramSocket, null, serverPort, targetDataLine, null, null);
-		targetDataLineThread.stopAudioStreamMicrophone();
-		verify(clientDatagramSocket, times(1)).close();
-		verify(targetDataLine, times(1)).flush();
-		verify(targetDataLine, times(1)).close();
-	}
-
-	@Test
-	public void initializeMixer() throws LineUnavailableException {
-
-		javax.sound.sampled.Line.Info infoLine = mock(javax.sound.sampled.Line.Info.class);
-		when(infoLine.toString()).thenReturn("TEST");
-
-		doNothing().when(targetDataLine).open(Mockito.any(AudioFormat.class));
-		doNothing().when(targetDataLine).start();
-		when(targetDataLine.getLineInfo()).thenReturn(infoLine);
-
-		Mixer mixer = Mockito.mock(Mixer.class);
-		when(mixer.getLine(Mockito.any(javax.sound.sampled.Line.Info.class))).thenReturn(targetDataLine);
-
-		MyMixerInfo mixerInfo = new MyMixerInfo("Set [plughw:1,0]", "test", "test description", "0.1");
-		when(mixerWrapper.getMixerInfo()).thenReturn(new Info[] {mixerInfo});
-		when(mixerWrapper.getMixer(Mockito.any(Info.class))).thenReturn(mixer);
-
-		targetDataLineThread = new TargetDataLineThread(null, null, serverPort, null, mixerWrapper, null);
-		targetDataLineThread.initialize();
-
-		verify(targetDataLine, times(1)).open(Mockito.any(AudioFormat.class));
-		verify(targetDataLine, times(1)).start();
-		verify(targetDataLine, times(1)).getLineInfo();
-	}
-
-	@Test
-	public void initializeMixerErrorOpeningTargetDataLine() throws LineUnavailableException {
-
-		javax.sound.sampled.Line.Info infoLine = mock(javax.sound.sampled.Line.Info.class);
-		when(infoLine.toString()).thenReturn("TEST");
-
-		doThrow(LineUnavailableException.class).when(targetDataLine).open(Mockito.any(AudioFormat.class));
-
-		Mixer mixer = Mockito.mock(Mixer.class);
-		when(mixer.getLine(Mockito.any(javax.sound.sampled.Line.Info.class))).thenReturn(targetDataLine);
-
-		MyMixerInfo mixerInfo = new MyMixerInfo("Set [plughw:1,0]", "test", "test description", "0.1");
-		when(mixerWrapper.getMixerInfo()).thenReturn(new Info[] {mixerInfo});
-		when(mixerWrapper.getMixer(Mockito.any(Info.class))).thenReturn(mixer);
-
-		targetDataLineThread = new TargetDataLineThread(null, null, serverPort, null, mixerWrapper, null);
-		targetDataLineThread.initialize();
-
-		verify(targetDataLine, times(1)).open(Mockito.any(AudioFormat.class));
-		verify(targetDataLine, never()).start();
-		verify(targetDataLine, never()).getLineInfo();
+		// Close audio connections.
+		audioCollectorSocket.close();
+		sourceDataLine.drain();
+		sourceDataLine.stop();
+		sourceDataLine.close();
 	}
 }

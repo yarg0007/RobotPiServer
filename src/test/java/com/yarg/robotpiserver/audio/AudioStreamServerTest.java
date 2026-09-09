@@ -1,76 +1,59 @@
 package com.yarg.robotpiserver.audio;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-
 import org.mockito.Mockito;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.yarg.robotpiserver.video.VideoStream;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 public class AudioStreamServerTest {
 
-	AudioStreamServer audioStreamServer;
-	SourceDataLineThread incomingStream = mock(SourceDataLineThread.class);
-	TargetDataLineThread microphoneStream = mock(TargetDataLineThread.class);
-	VideoStream videoStream = mock(VideoStream.class);
+    private AudioStreamServer audioStreamServer;
+    private SourceDataLineThread incomingStream = mock(SourceDataLineThread.class);
+    private TargetDataLineThread microphoneStream = mock(TargetDataLineThread.class);
 
-	@Test
-	public void startAndStopServer() throws Exception {
+    @BeforeMethod(alwaysRun = true)
+    public void reset() {
+        Mockito.reset(incomingStream, microphoneStream);
+    }
 
-		audioStreamServer = new AudioStreamServer(incomingStream, microphoneStream, videoStream);
-		audioStreamServer.startAudioStream();
-		audioStreamServer.stopAudioStream();
+    @Test
+    public void startAndStopAudioStream() {
+        audioStreamServer = new AudioStreamServer(incomingStream, microphoneStream);
+        audioStreamServer.startAudioStream();
+        audioStreamServer.stopAudioStream();
 
-		verify(incomingStream, times(1)).startAudioStreamSpeakers();
-		verify(microphoneStream, times(1)).startAudioStreamMicrophone();
-		verify(incomingStream, times(1)).stopAudioStreamSpeakers();
-		verify(microphoneStream, times(1)).stopAudioStreamMicrophone();
-		verify(videoStream, times(1)).stopVideoStream();
-	}
+        verify(incomingStream, times(1)).startAudioStreamSpeakers();
+        verify(microphoneStream, times(1)).startAudioStreamMicrophone();
+        verify(incomingStream, times(1)).stopAudioStreamSpeakers();
+        verify(microphoneStream, times(1)).stopAudioStreamMicrophone();
+    }
 
-	@Test
-	public void addAndRemoveAudioListener() throws Exception {
+    @Test
+    public void addAndRemoveAudioLevelListener() {
+        doNothing().when(incomingStream).addAudioLevelListener(any(AudioLevelListener.class));
+        doNothing().when(incomingStream).removeAudioLevelListener(any(AudioLevelListener.class));
 
-		doNothing().when(incomingStream).addAudioLevelListener(Mockito.any(AudioLevelListener.class));
-		doNothing().when(incomingStream).removeAudioLevelListener(Mockito.any(AudioLevelListener.class));
-		AudioLevelListenerImpl impl = new AudioLevelListenerImpl();
+        AudioLevelListenerImpl impl = new AudioLevelListenerImpl();
 
-		audioStreamServer = new AudioStreamServer(incomingStream, microphoneStream, videoStream);
-		audioStreamServer.addAudioLevelListener(impl);
+        audioStreamServer = new AudioStreamServer(incomingStream, microphoneStream);
+        audioStreamServer.addAudioLevelListener(impl);
 
-		verify(incomingStream, times(1)).addAudioLevelListener(Mockito.any(AudioLevelListener.class));
-		verify(incomingStream, never()).removeAudioLevelListener(Mockito.any(AudioLevelListener.class));
+        verify(incomingStream, times(1)).addAudioLevelListener(any(AudioLevelListener.class));
+        verify(incomingStream, never()).removeAudioLevelListener(any(AudioLevelListener.class));
 
-		audioStreamServer.removeAudioLevelListener(impl);
+        audioStreamServer.removeAudioLevelListener(impl);
 
-		verify(incomingStream, times(1)).addAudioLevelListener(Mockito.any(AudioLevelListener.class));
-		verify(incomingStream, times(1)).removeAudioLevelListener(Mockito.any(AudioLevelListener.class));
-	}
-
-	@Test
-	public void setAddress() throws Exception {
-		audioStreamServer = new AudioStreamServer(incomingStream, microphoneStream, videoStream);
-		String address = audioStreamServer.getAddress();
-		assertNull(address, "Address is expected to be null by default.");
-
-		String addressValue = "http://localhost:8080";
-		audioStreamServer.setAddress(addressValue);
-		address = audioStreamServer.getAddress();
-		assertEquals(address, addressValue);
-	}
+        verify(incomingStream, times(1)).addAudioLevelListener(any(AudioLevelListener.class));
+        verify(incomingStream, times(1)).removeAudioLevelListener(any(AudioLevelListener.class));
+    }
 }
 
 class AudioLevelListenerImpl implements AudioLevelListener {
 
-	@Override
-	public void audioLevelUpdate(int audioLevelBaseline, int currentAudioLevel) {
-		; // Do nothing.
-	}
-
+    @Override
+    public void audioLevelUpdate(int audioLevelBaseline, int currentAudioLevel) {
+        ; // Do nothing.
+    }
 }

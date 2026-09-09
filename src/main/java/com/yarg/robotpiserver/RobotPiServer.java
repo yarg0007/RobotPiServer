@@ -1,78 +1,46 @@
 package com.yarg.robotpiserver;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-import java.io.Console;
-import java.io.IOException;
-
-import com.yarg.robotpiserver.audio.AudioStreamServer;
-import com.yarg.robotpiserver.control.InputControlServer;
+import com.yarg.robotpiserver.server.ConnectionServer;
+import com.yarg.robotpiserver.server.controller.ControllerImpl;
+import com.yarg.robotpiserver.server.controller.ControllerInterface;
+import com.yarg.robotpiserver.server.handler.impl.ConnectHandler;
+import com.yarg.robotpiserver.server.handler.impl.DisconnectHandler;
 import com.yarg.robotpiserver.util.Generated;
+
+import java.io.IOException;
 
 @Generated // Ignore Jacoco
 public class RobotPiServer {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 
 		System.out.println("Setting up server and waiting for connection...");
 
-		AudioStreamServer streamServer = new AudioStreamServer();
-		streamServer.startAudioStream();
+		ControllerInterface controller = new ControllerImpl();
+		final ConnectionServer server = new ConnectionServer(
+				new ConnectHandler(controller),
+				new DisconnectHandler(controller));
 
-		InputControlServer inputControls = new InputControlServer();
-		inputControls.startInputControlServer();
+		server.startServer();
+		System.out.println("Server started on port " + server.getServerAddress().getPort());
 
-		streamServer.addAudioLevelListener(inputControls);
+		final Object lock = new Object();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				try {
+					server.stopServer();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				synchronized (lock) {
+					lock.notifyAll();
+				}
+			}
+		});
 
-		Console console = System.console();
-		console.readLine("Press enter to quit.");
-
-		System.out.println("Shutting down robot pi receiver.");
-
-		streamServer.stopAudioStream();
-		streamServer.removeAudioLevelListener(inputControls);
-		System.out.println("Audio stream stopped.");
-
-		inputControls.stopInputControlServer();
-		System.out.println("Input control server stopped.");
-
-		String[] cmd = {
-				"/bin/sh",
-				"-c",
-				"kill $(ps aux | grep '[g]st-launch-1.0' | awk '{print $2}')",
-				"kill $(ps aux | grep '[r]aspivid' | awk '{print $2}')"
-		};
-
-		try {
-			Runtime.getRuntime().exec(cmd);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		synchronized (lock) {
+			lock.wait();
 		}
-
-		System.out.println("Video stream stopped.");
-
-		System.out.println("Shutdown complete.");
 	}
-
 }

@@ -1,35 +1,41 @@
 package com.yarg.robotpiserver.audio;
 
+import com.yarg.gen.models.ConfigurationModelAudioStreamServer;
 import com.yarg.robotpiserver.util.Generated;
-import com.yarg.robotpiserver.video.VideoStream;
 
-public class AudioStreamServer implements DatagramClientReturnAddress {
+import java.util.Objects;
 
-	private int RECEIVE_PORT = 49809;
-
-	private int SEND_PORT = 49808;
-
-	private String SERVER_ADDRESS;
+public class AudioStreamServer {
 
 	private SourceDataLineThread incomingStream;
 	private TargetDataLineThread microphoneStream;
-	private VideoStream videoStream;
 
-	@Generated // Ignore Jacoco
-	public AudioStreamServer() {
-		SERVER_ADDRESS = null;
-		incomingStream = new SourceDataLineThread(RECEIVE_PORT, this);
-		microphoneStream = new TargetDataLineThread(this, SEND_PORT);
-
-		incomingStream.initialize();
-		microphoneStream.initialize();
+	/**
+	 * Production constructor. Creates audio threads configured to stream to/from the given client IP.
+	 * Both SourceDataLineThread and TargetDataLineThread initialize hardware in their constructors.
+	 *
+	 * @param clientIpAddress IP address of the connected client.
+	 * @param audioConfig Audio stream configuration (receive/send ports, mixer name).
+	 * @throws TargetDataLineException If the microphone mixer cannot be initialized.
+	 */
+	@Generated
+	public AudioStreamServer(String clientIpAddress, ConfigurationModelAudioStreamServer audioConfig) throws TargetDataLineException {
+		Objects.requireNonNull(clientIpAddress, "clientIpAddress MUST NOT be null.");
+		Objects.requireNonNull(audioConfig, "audioConfig MUST NOT be null.");
+		incomingStream = new SourceDataLineThread(audioConfig.getReceivePort());
+		microphoneStream = new TargetDataLineThread(
+				audioConfig.getMicrophoneMixerName(), clientIpAddress, audioConfig.getSendPort());
 	}
 
-	public AudioStreamServer(SourceDataLineThread incomingStream, TargetDataLineThread microphoneStream,
-			VideoStream videoStream) {
+	/**
+	 * Test constructor. Injects pre-built thread instances for unit testing.
+	 *
+	 * @param incomingStream Thread receiving audio from client and playing through speakers.
+	 * @param microphoneStream Thread capturing microphone and sending to client.
+	 */
+	public AudioStreamServer(SourceDataLineThread incomingStream, TargetDataLineThread microphoneStream) {
 		this.incomingStream = incomingStream;
 		this.microphoneStream = microphoneStream;
-		this.videoStream = videoStream;
 	}
 
 	public void startAudioStream() {
@@ -38,7 +44,6 @@ public class AudioStreamServer implements DatagramClientReturnAddress {
 	}
 
 	public void stopAudioStream() {
-		videoStream.stopVideoStream();
 		incomingStream.stopAudioStreamSpeakers();
 		microphoneStream.stopAudioStreamMicrophone();
 	}
@@ -50,28 +55,4 @@ public class AudioStreamServer implements DatagramClientReturnAddress {
 	public void removeAudioLevelListener(AudioLevelListener listener) {
 		incomingStream.removeAudioLevelListener(listener);
 	}
-
-	// -------------------------------------------------------------------------
-	// Methods required by DatagramClientReturnAddress
-	// -------------------------------------------------------------------------
-
-	@Override
-	public void setAddress(String address) {
-		SERVER_ADDRESS = address;
-
-		// The client address used for audio is the same one we want to use for
-		// sending the video stream on. Hence, the video is started here.
-		// Stopping of the video stream is also handled at the same time as the
-		// audio stream is closed.
-		if (videoStream == null) {
-			videoStream = new VideoStream(address);
-		}
-		videoStream.startVideoStream();
-	}
-
-	@Override
-	public String getAddress() {
-		return SERVER_ADDRESS;
-	}
-
 }

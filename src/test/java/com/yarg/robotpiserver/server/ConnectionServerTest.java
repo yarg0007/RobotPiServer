@@ -3,6 +3,7 @@ package com.yarg.robotpiserver.server;
 import com.yarg.gen.models.DisconnectRequest;
 import com.yarg.robotpiserver.client.ClientConnection;
 import com.yarg.robotpiserver.config.Configuration;
+import com.yarg.robotpiserver.server.controller.ControllerInterface;
 import com.yarg.robotpiserver.server.handler.impl.ConnectHandler;
 import com.yarg.robotpiserver.server.handler.impl.DisconnectHandler;
 import com.yarg.robotpiserver.util.SendRequest;
@@ -14,10 +15,13 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 
 public class ConnectionServerTest {
 
     private ConnectionServer server;
+    private ControllerInterface controller = mock(ControllerInterface.class);
 
     @BeforeMethod(alwaysRun = true)
     @AfterMethod(alwaysRun = true)
@@ -25,19 +29,20 @@ public class ConnectionServerTest {
         if (server != null) {
             server.stopServer();
         }
-
+        reset(controller);
+        ClientConnection.getInstance().disconnectClient();
         Configuration.getInstance().reinitializeToDefault();
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void nullConnectHandler() throws Exception {
-        server = new ConnectionServer(null, new DisconnectHandler());
+        server = new ConnectionServer(null, new DisconnectHandler(controller));
         assertThat(ClientConnection.getInstance().hasConnection(), is(equalTo(false)));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void nullDisconnectHandler() throws Exception {
-        server = new ConnectionServer(new ConnectHandler(), null);
+        server = new ConnectionServer(new ConnectHandler(controller), null);
         assertThat(ClientConnection.getInstance().hasConnection(), is(equalTo(false)));
     }
 
@@ -46,7 +51,7 @@ public class ConnectionServerTest {
 
         Configuration.getInstance().reinitializeWithResourceConfig("/com/yarg/robotpiserver/server/connectionServerTestConfig.json");
 
-        server = new ConnectionServer(new ConnectHandler(), new DisconnectHandler());
+        server = new ConnectionServer(new ConnectHandler(controller), new DisconnectHandler(controller));
         server.startServer();
 
         TestResponse response = SendRequest.get("http://localhost:1234/connect");
@@ -56,16 +61,17 @@ public class ConnectionServerTest {
     }
 
     @Test
-    public void sendConnectRequestAgainAfterInitialConnection() throws Exception {
+    public void sendConnectRequestAgainAfterInitialConnectionReconnects() throws Exception {
 
         Configuration.getInstance().reinitializeWithResourceConfig("/com/yarg/robotpiserver/server/connectionServerTestConfig.json");
 
-        server = new ConnectionServer(new ConnectHandler(), new DisconnectHandler());
+        server = new ConnectionServer(new ConnectHandler(controller), new DisconnectHandler(controller));
         server.startServer();
 
         SendRequest.get("http://localhost:1234/connect");
         TestResponse response = SendRequest.get("http://localhost:1234/connect");
-        assertThat(response.getStatusCode(), is(equalTo(500)));
+        assertThat(response.getStatusCode(), is(equalTo(200)));
+        assertThat(response.getPayload(), is(equalTo("{\"message\":\"Connection established.\"}")));
         assertThat(ClientConnection.getInstance().hasConnection(), is(equalTo(true)));
     }
 
@@ -73,7 +79,7 @@ public class ConnectionServerTest {
     public void sendDisconnectRequest() throws Exception {
         Configuration.getInstance().reinitializeWithResourceConfig("/com/yarg/robotpiserver/server/connectionServerTestConfig.json");
 
-        server = new ConnectionServer(new ConnectHandler(), new DisconnectHandler());
+        server = new ConnectionServer(new ConnectHandler(controller), new DisconnectHandler(controller));
         server.startServer();
 
         SendRequest.get("http://localhost:1234/connect");
@@ -90,7 +96,7 @@ public class ConnectionServerTest {
     public void sendDisconnectRequestTwice() throws Exception {
         Configuration.getInstance().reinitializeWithResourceConfig("/com/yarg/robotpiserver/server/connectionServerTestConfig.json");
 
-        server = new ConnectionServer(new ConnectHandler(), new DisconnectHandler());
+        server = new ConnectionServer(new ConnectHandler(controller), new DisconnectHandler(controller));
         server.startServer();
 
         SendRequest.get("http://localhost:1234/connect");

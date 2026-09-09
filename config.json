@@ -1,5 +1,12 @@
 {
 	"serverIpAddress": "robotpi.local",
-	"serverPort": 1234,
-	"serverBackLogging": 10
+	"serverPort": 8001,
+	"serverBackLogging": 10,
+	"inputControlServerPort": 49801,
+	"audioStreamServer": {
+		"receivePort": 49809,
+		"sendPort": 49808,
+		"microphoneMixerName": "Set [plughw:1,0]"
+	},
+	"videoStreamPort": 5000
 }
