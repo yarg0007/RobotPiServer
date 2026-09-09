@@ -35,7 +35,14 @@ public class VideoStream {
 	 */
 	public boolean isVideoStreamRunning() {
 		if (videoStreamProcess != null) {
-			return videoStreamProcess.isAlive();
+			// Process.isAlive() requires Java 8; use exitValue() for Java 7 compatibility.
+			// exitValue() throws IllegalThreadStateException if the process is still running.
+			try {
+				videoStreamProcess.exitValue();
+				return false;
+			} catch (IllegalThreadStateException e) {
+				return true;
+			}
 		}
 
 		return false;

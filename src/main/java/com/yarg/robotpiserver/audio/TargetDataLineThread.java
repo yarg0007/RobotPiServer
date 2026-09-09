@@ -268,11 +268,7 @@ public class TargetDataLineThread implements Runnable {
 	 * @return Size of buffer
 	 */
 	protected int getAudioBufferSizeBytes() {
-
-		int frameSizeInBytes = getAudioFormat().getFrameSize();
-		int bufferLengthInFrames = targetDataLine.getBufferSize() / 8;
-		int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
-		return bufferLengthInBytes;
+		return 4096;
 	}
 
 	// -------------------------------------------------------------------------

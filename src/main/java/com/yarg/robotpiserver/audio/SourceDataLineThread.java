@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
 /**
@@ -142,8 +143,6 @@ public class SourceDataLineThread implements Runnable {
 				}
 			}
 
-			sourceDataLine.start();
-
 			System.out.println(sourceDataLine.getLineInfo().toString());
 		}
 	}
@@ -208,42 +207,43 @@ public class SourceDataLineThread implements Runnable {
 			return;
 		}
 
+		try {
+			serverDatagramSocket.setSoTimeout(50);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
+
 		byte[] datagramBuffer = new byte[4096];
 		DatagramPacket datagramPacket = new DatagramPacket(datagramBuffer, datagramBuffer.length);
 
-		System.out.println("Waiting for initial packet");
+		// 50 ms of silence at 44.1 kHz / 16-bit / mono = 4410 bytes.
+		// Pre-fill the line before start() so the DAC has data immediately,
+		// preventing the underrun pop that occurs when start() fires on an empty buffer.
+		// The same buffer is written on each socket timeout to keep the line fed.
+		byte[] silence = new byte[4410];
+		sourceDataLine.write(silence, 0, silence.length);
+		sourceDataLine.start();
 
-		try {
-			serverDatagramSocket.receive(datagramPacket);
-			System.out.println("Initial audio packet received! Starting playback.");
-		} catch (IOException e) {
-			System.out.println(
-					"Exception occurred with initial incoming audio stream. See stack trace for more infomation.");
-			e.printStackTrace();
-			stopAudioStreamSpeakers();
-			return;
-		}
+		System.out.println("SourceDataLineThread running, waiting for audio packets.");
 
 		while (running) {
 
 			try {
 				serverDatagramSocket.receive(datagramPacket);
+				sendAudioToSpeaker(datagramPacket);
+			} catch (SocketTimeoutException ste) {
+				// No packet arrived within 50 ms — write silence so the SourceDataLine
+				// never underruns. An empty buffer causes ALSA to click/pop on recovery.
+				sourceDataLine.write(silence, 0, silence.length);
 			} catch (IOException e) {
-
 				System.out.println("Exception on incoming audio stream. Pausing before continuing.");
 				e.printStackTrace();
-
-				// Let the system rest and then loop back to try the
-				// next incoming data bit.
 				try {
 					Thread.sleep(500);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-				continue;
 			}
-
-			sendAudioToSpeaker(datagramPacket);
 		}
 	}
 
