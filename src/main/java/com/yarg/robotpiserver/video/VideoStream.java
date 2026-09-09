@@ -57,9 +57,13 @@ public class VideoStream {
 
 		// -ih embeds SPS/PPS headers at every IDR frame so reconnecting clients
 		// can sync immediately without "damaged access unit" errors.
+		// -g 15 sets a 1-second GOP at 15 fps; smaller GOPs allow faster seek/sync.
+		// VLC: -q suppresses verbose logging (saves significant CPU on ARMv6).
+		// --sout-rtp-caching=0 and --no-sout-rtp-synchronisation minimize transmission delay.
 		String videoCommand = String.format(
-				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -ih -o - | " +
-				"/usr/bin/cvlc -vvv stream:///dev/stdin --sout '#rtp{sdp=rtsp://:%d/}' :demux=h264",
+				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 2000000 -ih -g 15 -o - | " +
+				"/usr/bin/cvlc -q stream:///dev/stdin --sout '#rtp{sdp=rtsp://:%d/}' :demux=h264" +
+				" --sout-rtp-caching=0 --no-sout-rtp-synchronisation",
 				port);
 
 		try {
