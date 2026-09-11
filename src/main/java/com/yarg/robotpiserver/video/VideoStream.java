@@ -61,7 +61,7 @@ public class VideoStream {
 		// -ih embeds SPS/PPS at every IDR so the decoder can sync on first keyframe.
 		// -b 1500000 keeps bandwidth manageable on the slow ARMv6.
 		String videoCommand = String.format(
-				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -b 1500000 -ih -o - | nc -l %d",
+				"/usr/bin/raspivid -n -t 0 -h 480 -w 640 -fps 15 -hf -b 1500000 -ih -o - | nc -l %d",
 				port);
 
 		try {
